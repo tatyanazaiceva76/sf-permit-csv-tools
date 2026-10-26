@@ -1,0 +1,75 @@
+<p>Turn a San Francisco Building Permits CSV into a food-service research shortlist. Filter by scope and filing date, collapse repeated permit IDs, and flag possible references to earlier permits. <strong>Free, no signup.</strong> The tool processes the text in this page; its code does not upload your CSV or request live records.</p>
+<style>
+#sf-permit-csv-tool{--sf-ink:#193837;--sf-accent:#12655a;--sf-line:#cddbd7;--sf-muted:#4b625e;background:#f4f8f6;border:1px solid var(--sf-line);border-radius:14px;padding:clamp(16px,4vw,28px);margin:24px 0;color:var(--sf-ink);font:16px/1.6 system-ui,sans-serif}
+#sf-permit-csv-tool *{box-sizing:border-box}
+#sf-permit-csv-tool h2{font-size:1.45rem;line-height:1.3;margin:0 0 12px}
+#sf-permit-csv-tool label{display:block;font-weight:650;margin:12px 0 5px}
+#sf-permit-csv-tool textarea,#sf-permit-csv-tool input,#sf-permit-csv-tool select{width:100%;background:#fff;border:1px solid #78968d;border-radius:6px;padding:10px;color:#193837;font:inherit}
+#sf-permit-csv-tool textarea{min-height:180px;font:13px/1.5 ui-monospace,monospace}
+#sf-permit-csv-tool .sf-controls{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+#sf-permit-csv-tool .sf-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+#sf-permit-csv-tool button{border:1px solid var(--sf-accent);border-radius:7px;padding:10px 15px;background:var(--sf-accent);color:#fff;font:600 15px/1.4 system-ui,sans-serif;cursor:pointer}
+#sf-permit-csv-tool button.sf-secondary{background:#fff;color:var(--sf-accent)}
+#sf-permit-csv-tool button:disabled{opacity:.45;cursor:default}
+#sf-permit-csv-tool :focus-visible{outline:3px solid #edac3a;outline-offset:3px}
+#sf-permit-csv-tool [data-tool=status]{background:#e4efea;padding:12px;border-radius:7px}
+#sf-permit-csv-tool .sf-small{font-size:14px;color:var(--sf-muted)}
+#sf-permit-csv-tool .sf-table{overflow-x:auto}
+#sf-permit-csv-tool table{border-collapse:collapse;width:100%;min-width:590px;font-size:14px;background:#fff}
+#sf-permit-csv-tool th,#sf-permit-csv-tool td{border:1px solid var(--sf-line);padding:12px;vertical-align:top;text-align:left}
+#sf-permit-csv-tool th{background:#e4efea}
+#sf-permit-csv-tool a{color:#075c53;text-decoration:underline}
+#sf-permit-csv-tool details{margin-top:8px}
+#sf-permit-csv-tool summary{cursor:pointer;font-weight:650}
+#sf-permit-csv-tool [hidden]{display:none!important}
+@media(max-width:520px){#sf-permit-csv-tool .sf-controls{grid-template-columns:1fr}}
+</style>
+<section id="sf-permit-csv-tool" aria-label="SF restaurant permit CSV filter">
+<h2>Review a permit CSV</h2>
+<p class="sf-small">Use a comma-separated export with Permit Number, Description and Filed Date. Street and status columns are retained when supplied. Maximum: 2 MB and 10,000 rows.</p>
+<label for="sf-csv-input">CSV text</label>
+<textarea id="sf-csv-input" data-tool="input" spellcheck="false" placeholder="Paste the header row and permit records here"></textarea>
+<div class="sf-controls">
+<div><label for="sf-csv-since">Filed on or after (optional)</label><input id="sf-csv-since" data-tool="since" type="date" /></div>
+<div><label for="sf-csv-mode">Scope filter</label><select id="sf-csv-mode" data-tool="mode"><option value="all">Food-service and equipment wording</option><option value="equipment">Kitchen / hood / walk-in / equipment plan</option><option value="hood">Hood / kitchen-ventilation context</option><option value="refrigeration">Walk-in / refrigeration wording</option><option value="coffee">Coffee / tea context</option></select></div>
+</div>
+<div class="sf-actions">
+<button type="button" data-tool="review" disabled>Review CSV</button>
+<button type="button" data-tool="examples" class="sf-secondary" disabled>Load 4 dated examples</button>
+<button type="button" data-tool="equipment-examples" class="sf-secondary" disabled>Load 3 equipment examples</button>
+<button type="button" data-tool="clear" class="sf-secondary" disabled>Clear input</button>
+</div>
+<p role="status" aria-live="polite" data-tool="status">JavaScript is needed for local CSV processing. The source links and worked examples below remain readable.</p>
+<p data-tool="example-note" class="sf-small" hidden>The four built-in examples were checked October 26, 2026 UTC; the source rows retain October 21 or 24 data-as-of dates. Loading them is a demonstration, not a live search.</p>
+<p data-tool="equipment-note" class="sf-small" hidden>These three earlier examples come from dated saved source rows, not a fresh lookup: 1114 Bryant St, data as of October 1; 2031 Chestnut St, October 11; 1850 Polk St, October 20, 2026. A later equipment-plan revision at 2031 Chestnut is in the four-example set. Neither set establishes a current purchase.</p>
+<p class="sf-small"><a data-tool="share" href="#sf-permit-csv-tool">Open shareable view of these filters</a>. The link includes your filter settings and, if selected, the built-in example set. It never includes pasted CSV text. A recipient must paste their own CSV when custom data is used.</p>
+<div data-tool="warnings" class="sf-small"></div>
+<div data-tool="results" hidden>
+<div class="sf-table"><table><thead><tr><th>Address / permit</th><th>Dates / recorded status</th><th>Scope / checks</th></tr></thead><tbody data-tool="rows"></tbody></table></div>
+<div class="sf-actions"><button type="button" data-tool="export" disabled>Download matched CSV</button></div>
+</div>
+<p class="sf-small">Purchasing status is always UNVERIFIED. A keyword match, active permit or address association does not identify a buyer, establish an open order or prove a new restaurant opening.</p>
+</section>
+<h2>How to use it</h2>
+<ol>
+<li>Open the official <a href="https://data.sf.gov/Housing-and-Buildings/Building-Permits/i98e-djp9/about_data">DataSF Building Permits dataset, i98e-djp9</a> and obtain a CSV export. Keep the column headers and the source dates. You can filter the official dataset before exporting a smaller file.</li>
+<li>Open the CSV as text, copy it with its header, and paste it above. The tool accepts display headers such as “Permit Number” and API-style names such as “permit_number”.</li>
+<li>Choose a filing cutoff or a scope filter, then select Review CSV. Separate modes cover hood context, refrigeration wording and coffee/tea context. Read the original scope before treating a match as useful.</li>
+<li>Download matched CSV for your own research. It retains permit IDs, source/status dates, reference candidates, duplicate flags, official record links and unverified purchasing status.</li>
+</ol>
+<h2>What the filters establish</h2>
+<p>The broad filter looks for restaurant, coffee shop, coffee bar, café, or walk-in cooler/freezer wording. The narrower filter also requires kitchen, hood, walk-in cooler/freezer, or equipment plan/schedule/layout wording. A generic equipment-room mention does not satisfy that narrower rule. These are text rules; they can miss relevant projects or include unrelated work. A cabinet-only job can still match the broad filter and is flagged for inspection.</p>
+<p>The broad rule also accepts food-service, food-preparation, beverage-bar and commercial-kitchen wording. Every trade mode first requires food-service context. Cabinet-only exclusions do not pass trade modes. Hood context can mean equipment placed under an existing hood; it does not imply hood replacement. Refrigeration wording can describe removal rather than installation. Coffee/tea context does not establish a coffee-machine purchase.</p>
+<h2>Open an equipment-specific example</h2>
+<ul>
+<li><a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/free-sf-restaurant-permit-csv-filter.html?scope=hood&amp;examples=equipment#sf-permit-csv-tool">Hood context: 2031 Chestnut St</a> — the saved scope describes equipment under a hood in an existing restaurant. It does not specify a new hood order.</li>
+<li><a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/free-sf-restaurant-permit-csv-filter.html?scope=refrigeration&amp;examples=equipment#sf-permit-csv-tool">Walk-in cooler wording: 1114 Bryant St</a> — a new cooler and hand sink are stated in the older source. Purchasing status remains unverified.</li>
+<li><a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/free-sf-restaurant-permit-csv-filter.html?scope=coffee&amp;examples=equipment#sf-permit-csv-tool">Coffee/tea context: 1850 Polk St</a> — the scope states commercial food-service equipment and no cooking. The saved October 20 row records issuance on October 19; it does not prove present procurement.</li>
+</ul>
+<p>When Primary Address Flag is supplied, rows explicitly marked secondary are skipped. Repeated permit IDs retain their first remaining row and receive a duplicate warning; conflicting versions need source review. A reference such as “PA# 202609037630” is a candidate relationship, not an automatic project merge. Distinct permit IDs are not counted as distinct buyers.</p>
+<p>Files without source freshness or primary-address columns receive a warning. The tool does not infer missing owner names, contacts, suppliers, opening dates or procurement. The CSV export time records your download, not a fresh government update.</p>
+<h2>Inspect the four worked examples</h2>
+<p><a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/new-sf-restaurant-permits-october-1522.html">The October 26 worked table</a> explains the two additional research projects, one existing-project revision and one cabinet-replacement exclusion. It also includes an ABC license-address cross-check. <a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/sf-restaurant-equipment-leads-check.html">Six earlier free examples</a> show the original snapshot format.</p>
+<p>The optional <a href="https://payhip.com/b/Ck9Hu?utm_source=blogger&amp;utm_medium=organic&amp;utm_campaign=permit_csv_filter_20261026">SF Kitchen Pipeline research download costs $39 once</a>. It includes a separately dated, selected 20-project October 11 snapshot and dated addenda. The included 00_START_HERE archive gathers the research files in one download, with an offline copy of the original two-mode CSV filter. It is not a subscription or a promise of live leads. The current web filters are free without buying it. <a href="https://payhip.com/PuzzleForensics/contact">Ask about product Ck9Hu</a> before buying.</p>
+<p><small>Independent original tool prepared by SF Kitchen Pipeline with an AI assistant using public-record examples. No city affiliation or endorsement. DataSF records and dates can change. No live-record retrieval, owner-contact enrichment, verified buyer list or recurring updates are supplied by this page.</small></p>
+<!-- SCRIPT -->

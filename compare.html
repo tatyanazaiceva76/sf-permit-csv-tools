@@ -1,0 +1,365 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Free SF permit CSV snapshot comparison</title></head><body style="max-width:1100px;margin:32px auto;padding:0 16px;font:17px/1.65 system-ui,sans-serif"><h1>Free SF permit CSV snapshot comparison</h1><p>Comparing two permit exports helps separate changes worth inspecting from records you already reviewed. This free tool matches San Francisco DataSF CSV rows by permit number and keeps the earlier and later source values together. <strong>A changed permit is not a confirmed equipment purchase.</strong></p>
+<p>It runs in this page. Pasted CSV data are not uploaded or saved by this tool. No signup, purchase, live lookup or scheduled monitoring is involved.</p>
+<section id="sf-permit-csv-compare" aria-label="Compare two SF permit CSV exports">
+<style>
+#sf-permit-csv-compare {border:1px solid #b5c4c8;padding:18px;border-radius:8px;margin:22px 0;background:#fafcfb;color:#172b33;font:16px/1.55 system-ui,sans-serif}
+#sf-permit-csv-compare * {box-sizing:border-box}
+#sf-permit-csv-compare .compare-inputs {display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+#sf-permit-csv-compare textarea {display:block;width:100%;min-height:185px;margin:8px 0;font:13px/1.5 ui-monospace,monospace;background:#fff;color:#172b33;border:1px solid #8b9ca3;border-radius:4px;padding:10px}
+#sf-permit-csv-compare button,#sf-permit-csv-compare select {font:inherit;padding:8px 12px;margin:5px 5px 5px 0;border:1px solid #536f79;border-radius:4px;background:#fff;color:#172b33}
+#sf-permit-csv-compare button:not(:disabled) {cursor:pointer}
+#sf-permit-csv-compare button:disabled {opacity:.55}
+#sf-permit-csv-compare .compare-table-wrap {overflow-x:auto}
+#sf-permit-csv-compare table {border-collapse:collapse;width:100%;min-width:700px;font-size:14px}
+#sf-permit-csv-compare th,#sf-permit-csv-compare td {border:1px solid #b5c4c8;padding:10px;text-align:left;vertical-align:top}
+#sf-permit-csv-compare th {background:#e8f1ef}
+#sf-permit-csv-compare [hidden] {display:none!important}
+#sf-permit-csv-compare a {color:#145270;text-decoration:underline}
+#sf-permit-csv-compare [role="status"] {font-weight:600}
+</style>
+<h2>Compare two CSV snapshots</h2>
+<p>Use exports from the same dataset with the same search filters and coverage. Required columns: <strong>Permit Number</strong> and <strong>Status</strong> (or Current Status). API-style headers such as <code>permit_number</code> work. Other shared fields are compared when present.</p>
+<div class="compare-inputs">
+<label>Earlier CSV export<textarea data-compare="earlier" spellcheck="false" autocomplete="off" placeholder="Paste header and rows from the earlier export"></textarea></label>
+<label>Later CSV export<textarea data-compare="later" spellcheck="false" autocomplete="off" placeholder="Paste header and rows from the later export"></textarea></label>
+</div>
+<div><button type="button" data-compare="compare" disabled>Compare exports</button><button type="button" data-compare="example" disabled>Load three dated examples</button><button type="button" data-compare="clear" disabled>Clear inputs</button></div>
+<p data-compare="status" role="status" aria-live="polite">JavaScript is needed for this in-page tool. The explanation and source links below remain available.</p>
+<p data-compare="example-note" hidden>The earlier rows were saved in the October 11, 2026 snapshot; the later rows were checked October 20. Source-row Data As Of dates differ and are preserved. At 1850 Polk St the saved status changes from filed to issued, dated October 19. At 2109 Polk St the description gains a power-door-operator clause while its status stays filed. At 1114 Bryant St the compared fields are unchanged. These are historical examples, not a fresh source query.</p>
+<div data-compare="warnings" aria-live="polite"></div>
+<div data-compare="results" hidden>
+<p data-compare="compared-fields"></p><p data-compare="source-counts"></p>
+<label>Result view <select data-compare="view"><option value="changes">Changes and unmatched records</option><option value="changed">Compared fields changed</option><option value="only_later">Only in later export</option><option value="only_earlier">Only in earlier export</option><option value="ambiguous">Ambiguous duplicates</option><option value="unchanged">Unchanged in compared fields</option><option value="all">All compared permits</option></select></label>
+<button type="button" data-compare="download" disabled>Download selected comparison CSV</button>
+<p data-compare="display-limit"></p>
+<div class="compare-table-wrap"><table><caption>Permit comparison — purchasing status unverified</caption><thead><tr><th scope="col">Permit</th><th scope="col">Comparison</th><th scope="col">Earlier supplied record</th><th scope="col">Later supplied record</th></tr></thead><tbody data-compare="rows"></tbody></table></div>
+</div>
+</section>
+<h2>What each result means</h2>
+<ul>
+<li><strong>Only in later export:</strong> the permit ID is absent from your earlier input. It may be an older filing newly included by a changed filter, backfill or export limit. This is not proof of a new project.</li>
+<li><strong>Only in earlier export:</strong> the permit is absent from your later input. It is not established as cancelled, closed or removed from the official dataset.</li>
+<li><strong>Compared fields changed:</strong> a shared status, status date, filed date, description or address differs. Dates are compared at calendar-day precision. Inspect the supplied text and current official record.</li>
+<li><strong>Ambiguous duplicates:</strong> one input contains conflicting versions of a permit ID. The tool does not pick a reliable current version or count it as a confirmed change.</li>
+<li><strong>Unchanged in compared fields:</strong> no difference was found in the fields present in both inputs. A newer Data As Of value alone is excluded from change detection. Other columns and changes between snapshots are outside this comparison.</li>
+</ul>
+<h2>Use matching exports and retain the dates</h2>
+<p>Start with the <a href="https://data.sf.gov/Housing-and-Buildings/Building-Permits/i98e-djp9">official DataSF Building Permits table</a>. Apply the same filters before exporting each time. Prefer the full filtered export over a truncated screen sample. This tool does not prove that either export is complete.</p>
+<p>Primary Address Flag values of N, No, False or 0 are excluded. Missing or unknown primary flags are reported. Repeated permit IDs are grouped; conflicting compared values or source dates produce an ambiguous result. Rows without permit IDs cannot be matched and are reported as excluded.</p>
+<p>Each input is limited to 10,000 rows and roughly two million characters. The table shows at most 200 selected records; the comparison CSV includes every selected result. Source dates and supplied descriptions remain in the download. CSV cells that could be interpreted as spreadsheet formulas are prefixed with an apostrophe.</p>
+<p>For the dated example, check <a href="https://data.sf.gov/resource/i98e-djp9.json?permit_number=202608196841&amp;primary_address_flag=Y">1850 Polk St / permit 202608196841</a>. The saved October 20 row records issuance on October 19; it does not prove a coffee-equipment order is still open.</p>
+<p>For a scope-text change, compare <a href="https://data.sf.gov/resource/i98e-djp9.json?permit_number=202610079164&amp;primary_address_flag=Y">2109 Polk St / permit 202610079164</a>. The later saved description adds “installation of power door operator per da-04.” That clause does not establish an additional kitchen-equipment requirement or a new buyer.</p>
+<h2>Continue the research</h2>
+<p><strong>Questions about field coverage, source dates or the CSV format?</strong> <a href="https://payhip.com/PuzzleForensics/contact">Send a product question</a> and mention SF Kitchen Pipeline / CSV comparison. The form belongs to our existing Puzzle Forensics store, which handles product questions for this project. No pasted CSV is automatically included.</p>
+<p>Need a shortlist first? Use the <a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/free-sf-restaurant-permit-csv-filter.html">free restaurant permit CSV filter</a>. For interpretation, read the <a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/sf-restaurant-equipment-leads-check.html">six dated equipment-permit examples</a>.</p>
+<p>SF Kitchen Pipeline is an AI-assisted research product. Its separate <a href="https://payhip.com/b/Ck9Hu">October launch snapshot costs $39 once</a> and contains 20 selected projects plus dated research files. The browser tools are free without buying it. No purchaser, open order, live refresh, future update service or City affiliation is claimed.</p>
+<script type="module">
+const MAX_CHARS = 2000000;
+function parseCSV(input) {
+  const text = String(input).replace(/^\uFEFF/, '');
+  if (text.length > MAX_CHARS) throw new Error('Use a CSV smaller than 2 MB. Filter or split the official export first.');
+  const rows = [];
+  let row = [], cell = '', quoted = false, closed = false;
+  const field = () => { row.push(cell); cell = ''; closed = false; };
+  const line = () => {
+    field();
+    if (row.some(value => value.trim() !== '')) rows.push(row);
+    row = [];
+    if (rows.length > 10001) throw new Error('Use at most 10,000 source rows per review.');
+  };
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') { quoted = false; closed = true; }
+      else cell += c;
+    } else if (c === ',') field();
+    else if (c === '\r' || c === '\n') { if (c === '\r' && text[i + 1] === '\n') i++; line(); }
+    else if (c === '"') {
+      if (cell || closed) throw new Error('Malformed CSV quotation. Paste a comma-separated CSV export, including its header.');
+      quoted = true;
+    } else if (closed) {
+      if (!/\s/.test(c)) throw new Error('Unexpected text after a closing CSV quote.');
+    } else cell += c;
+  }
+  if (quoted) throw new Error('The CSV ends inside a quoted field. Paste the complete export.');
+  if (cell || row.length || closed) line();
+  return rows;
+}
+function normalizedHeader(value) { return value.toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function isoDay(value) {
+  const s = String(value || '').trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s])/.exec(s);
+  if (!m) {
+    const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:$|\s)/.exec(s);
+    if (us) m = [us[0], us[3], us[1].padStart(2, '0'), us[2].padStart(2, '0')];
+  }
+  if (!m) return '';
+  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]), date = new Date(Date.UTC(y, mo - 1, d));
+  return y >= 1900 && y <= 2200 && date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d ? m[1] + '-' + m[2] + '-' + m[3] : '';
+}
+function hasEquipmentWording(description) {
+  return /\bkitchen\b|\bhood\b|walk[- ]in\s+(cooler|freezer)|\bequipment\s+(plan|schedule|layout)\b/i.test(description);
+}
+const SCOPE_MODES = ['all', 'equipment', 'hood', 'refrigeration', 'coffee'];
+function hasFoodServiceWording(description) {
+  return /\brestaurant\b|\bcoffee\s+(shop|bar)\b|\bcaf[e\u00e9]\b|\bfood[- ]service\b|\bfood\s+prep(?:aration)?\b|\bbeverage\s+bar\b|\bcommercial\s+kitchen\b|walk[- ]in\s+(cooler|freezer)/i.test(description);
+}
+function matchesScope(description, mode) {
+  if (!hasFoodServiceWording(description)) return false;
+  if (mode === 'all') return true;
+  if (scopeReview(description).startsWith('Cabinet')) return false;
+  if (mode === 'equipment') return hasEquipmentWording(description);
+  if (mode === 'hood') return /\bhood\b|\bgrease\s+duct\b|\bmake[- ]?up\s+air\b|\bkitchen\s+(exhaust|ventilation)\b/i.test(description);
+  if (mode === 'refrigeration') return /walk[- ]in\s+(cooler|freezer)|reach[- ]in\s+(cooler|freezer)|\brefrigerat(?:ion|or|ors|ed)\b|\bcold\s+storage\b/i.test(description);
+  if (mode === 'coffee') return /\bcoffee\b|\bespresso\b|\btea\b/i.test(description);
+  return false;
+}
+function scopeMatchNote(description, mode) {
+  if (mode === 'hood') return 'Hood / kitchen-ventilation context \u2014 does not establish a new or replacement hood order';
+  if (mode === 'refrigeration') return 'Refrigeration wording \u2014 check installation versus removal and present procurement';
+  if (mode === 'coffee') return 'Coffee / tea context \u2014 a machine purchase is not established';
+  return scopeReview(description);
+}
+function scopeReview(description) {
+  if (/\bcabinets?\b/i.test(description) && /no food|no plumbing|no electrical/i.test(description)) return 'Cabinet wording \u2014 inspect; equipment need not established';
+  if (hasEquipmentWording(description)) return 'Kitchen, hood, walk-in or equipment-plan wording \u2014 inspect original scope';
+  return 'Food-service wording \u2014 equipment need not established';
+}
+function referenceCandidates(description, ownPermit) {
+  return [...new Set(Array.from(description.matchAll(/(?:ref(?:erence)?\.?(?:\s+(?:pa|permit|application))?|pa|permit|application)[\s:#.\-]*(20\d{10})\b/gi), m => m[1]).filter(id => id !== ownPermit))];
+}
+function sourceLink(permit) {
+  return 'https://data.sf.gov/resource/i98e-djp9.json?permit_number=' + encodeURIComponent(permit) + '&primary_address_flag=Y';
+}
+function reviewCSV(input, { since = '', mode = 'all' } = {}) {
+  if (!SCOPE_MODES.includes(mode)) throw new Error('Choose a supported scope filter.');
+  if (since && isoDay(since) !== since) throw new Error('Choose a valid filed-on-or-after date.');
+  const table = parseCSV(input);
+  if (table.length < 2) throw new Error('Paste the header and at least one data row.');
+  const header = table[0].map(normalizedHeader);
+  const index = (...aliases) => {
+    const found = aliases.map(a => header.indexOf(a)).find(i => i >= 0);
+    return found === undefined ? -1 : found;
+  };
+  const columns = {
+    permit: index('permitnumber'), description: index('description'), filed: index('fileddate'),
+    address: index('address', 'businessaddress'), number: index('streetnumber'), numberSuffix: index('streetnumbersuffix'),
+    street: index('streetname'), suffix: index('streetsuffix'), status: index('status', 'currentstatus'),
+    statusDate: index('statusdate', 'currentstatusdate'), asOf: index('dataasof'), primary: index('primaryaddressflag')
+  };
+  if ([columns.permit, columns.description, columns.filed].some(i => i < 0)) throw new Error('Required columns: Permit Number, Description and Filed Date. API-style headers such as permit_number also work.');
+  if (new Set(header).size !== header.length) throw new Error('The CSV has duplicate column names. Use one unmodified DataSF export.');
+  const warnings = [];
+  if (columns.primary < 0) warnings.push('No Primary Address Flag column: address-primary status was not checked.');
+  if (columns.asOf < 0) warnings.push('No Data As Of column: source freshness is unknown.');
+  const stats = { sourceRows: table.length - 1, duplicateRows: 0, secondaryRows: 0, missingPermitRows: 0, unparsedFiledDates: 0 };
+  const permits = new Map();
+  for (const raw of table.slice(1)) {
+    if (raw.length !== header.length) throw new Error('A data row has a different number of columns from the header. Check the CSV export.');
+    const get = key => columns[key] < 0 ? '' : String(raw[columns[key]] || '').trim();
+    if (columns.primary >= 0 && /^(n|no|false|0)$/i.test(get('primary'))) { stats.secondaryRows++; continue; }
+    const id = get('permit');
+    if (!id) { stats.missingPermitRows++; continue; }
+    const address = get('address') || [get('number') + get('numberSuffix'), get('street'), get('suffix')].filter(Boolean).join(' ');
+    const r = {
+      permit_number: id, address, filed_date: isoDay(get('filed')), status: get('status'),
+      status_date: isoDay(get('statusDate')), data_as_of: isoDay(get('asOf')), description: get('description'),
+      duplicate_source_rows: 0, address_conflict: false, primary_address_verified: /^y(?:es)?$/i.test(get('primary'))
+    };
+    if (!r.filed_date) stats.unparsedFiledDates++;
+    if (permits.has(id)) {
+      const existing = permits.get(id);
+      existing.duplicate_source_rows++; stats.duplicateRows++;
+      if (existing.address !== address) existing.address_conflict = true;
+      continue;
+    }
+    permits.set(id, r);
+  }
+  if (stats.duplicateRows) warnings.push('Duplicate permit IDs were collapsed to their first retained row. Compare conflicting versions in the source.');
+  if (stats.unparsedFiledDates) warnings.push('Some filed dates could not be parsed; a date filter excludes those rows.');
+  const rows = [...permits.values()].filter(r => {
+    if (!matchesScope(r.description, mode)) return false;
+    if (since && (!r.filed_date || r.filed_date < since)) return false;
+    return true;
+  }).map(r => ({
+    ...r, scope_review: scopeMatchNote(r.description, mode), scope_filter: mode, reference_permit_candidates: referenceCandidates(r.description, r.permit_number),
+    purchasing_status: 'UNVERIFIED', official_permit_url: sourceLink(r.permit_number)
+  })).sort((a, b) => b.filed_date.localeCompare(a.filed_date) || a.permit_number.localeCompare(b.permit_number));
+  return { rows, stats, warnings, since, mode };
+}
+function csvCell(value) {
+  let text = String(value ?? '');
+  if (/^[\s\u0000-\u001f]*[=+\-@]/.test(text)) text = "'" + text;
+  return '"' + text.replaceAll('"', '""') + '"';
+}
+function exportCSV(result, exportedAt) {
+  const keys = ['permit_number', 'address', 'filed_date', 'status', 'status_date', 'data_as_of', 'scope_review', 'reference_permit_candidates', 'duplicate_source_rows', 'address_conflict', 'primary_address_verified', 'purchasing_status', 'official_permit_url', 'description', 'scope_filter', 'exported_at_utc'];
+  const records = result.rows.map(row => keys.map(key => key === 'exported_at_utc' ? exportedAt : Array.isArray(row[key]) ? row[key].join(' | ') : row[key]));
+  return '\uFEFF' + [keys, ...records].map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
+}
+
+
+const ALIASES = {
+  permit_number: ['permitnumber'], status: ['status', 'currentstatus'],
+  status_date: ['statusdate', 'currentstatusdate'], filed_date: ['fileddate'],
+  data_as_of: ['dataasof'], description: ['description'],
+  address: ['address', 'businessaddress'], number: ['streetnumber'],
+  number_suffix: ['streetnumbersuffix'], street: ['streetname'], suffix: ['streetsuffix'],
+  primary: ['primaryaddressflag']
+};
+const COMPARE_FIELDS = ['status', 'status_date', 'filed_date', 'description', 'address'];
+const DATE_FIELDS = new Set(['status_date', 'filed_date']);
+const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
+const comparable = (key, value) => DATE_FIELDS.has(key) ? (isoDay(value) || clean(value)) : key === 'status' ? clean(value).toLowerCase() : clean(value);
+
+function readSnapshot(csv, label) {
+  const table = parseCSV(csv);
+  if (!table.length) throw new Error(label + ': paste a CSV including its header.');
+  const headers = table[0].map(normalizedHeader);
+  if (headers.some(h => !h) || new Set(headers).size !== headers.length) throw new Error(label + ': empty or duplicate column names.');
+  const cols = {};
+  for (const [key, aliases] of Object.entries(ALIASES)) {
+    const matches = headers.map((h, i) => aliases.includes(h) ? i : -1).filter(i => i >= 0);
+    if (matches.length > 1) throw new Error(label + ': more than one column represents ' + key + '. Keep one source column.');
+    cols[key] = matches[0] ?? -1;
+  }
+  if (cols.permit_number < 0 || cols.status < 0) throw new Error(label + ': required columns are Permit Number and Status (or Current Status).');
+  const present = new Set(Object.keys(cols).filter(k => cols[k] >= 0));
+  if (cols.address >= 0 || (cols.number >= 0 && cols.street >= 0)) present.add('address');
+  const warnings = [], records = new Map();
+  const stats = { sourceRows: table.length - 1, secondaryRows: 0, missingIdRows: 0, duplicateRows: 0, ambiguousPermits: 0, unknownPrimaryRows: 0 };
+  if (cols.primary < 0) warnings.push(label + ': no Primary Address Flag column; primary addresses could not be verified.');
+  if (cols.data_as_of < 0) warnings.push(label + ': no Data As Of column; source freshness is unknown.');
+  for (const values of table.slice(1)) {
+    if (values.length !== headers.length) throw new Error(label + ': a data row has a different number of cells from the header.');
+    const get = key => cols[key] < 0 ? '' : String(values[cols[key]] ?? '').trim();
+    if (/^(n|no|false|0)$/i.test(get('primary'))) { stats.secondaryRows++; continue; }
+    if (cols.primary >= 0 && !/^(y|yes|true|1)$/i.test(get('primary'))) stats.unknownPrimaryRows++;
+    const id = get('permit_number');
+    if (!id) { stats.missingIdRows++; continue; }
+    const address = get('address') || [get('number') + get('number_suffix'), get('street'), get('suffix')].filter(Boolean).join(' ');
+    const record = { permit_number: id, address, status: get('status'), status_date: get('status_date'), filed_date: get('filed_date'), description: get('description'), data_as_of: get('data_as_of'), duplicate_rows: 0, ambiguous: false };
+    if (records.has(id)) {
+      const previous = records.get(id);
+      previous.duplicate_rows++; stats.duplicateRows++;
+      // Never pick a winner between conflicting versions of the same permit.
+      if ([...COMPARE_FIELDS, 'data_as_of'].some(k => comparable(k, previous[k]) !== comparable(k, record[k]))) previous.ambiguous = true;
+    } else records.set(id, record);
+  }
+  stats.ambiguousPermits = [...records.values()].filter(r => r.ambiguous).length;
+  if (stats.missingIdRows) warnings.push(label + ': ' + stats.missingIdRows + ' rows without permit IDs were excluded; they cannot be matched.');
+  if (stats.duplicateRows) warnings.push(label + ': ' + stats.duplicateRows + ' duplicate rows collapsed. Conflicting versions are marked ambiguous, not treated as a reliable change.');
+  if (stats.unknownPrimaryRows) warnings.push(label + ': ' + stats.unknownPrimaryRows + ' rows have an unknown primary-address flag and were retained.');
+  return { records, present, warnings, stats };
+}
+
+function compareSnapshots(earlierCSV, laterCSV) {
+  const earlier = readSnapshot(earlierCSV, 'Earlier export'), later = readSnapshot(laterCSV, 'Later export');
+  const fields = COMPARE_FIELDS.filter(k => earlier.present.has(k) && later.present.has(k));
+  const warnings = [...earlier.warnings, ...later.warnings];
+  const missing = COMPARE_FIELDS.filter(k => !fields.includes(k));
+  if (missing.length) warnings.push('Not compared because a column is absent in at least one export: ' + missing.join(', ') + '.');
+  const counts = { only_later: 0, only_earlier: 0, changed: 0, unchanged: 0, ambiguous: 0 };
+  let reversedSourceDates = 0;
+  const rows = [...new Set([...earlier.records.keys(), ...later.records.keys()])].sort().map(id => {
+    const before = earlier.records.get(id), after = later.records.get(id);
+    let kind = 'unchanged', changedFields = [];
+    if (before?.ambiguous || after?.ambiguous) kind = 'ambiguous';
+    else if (!before) kind = 'only_later';
+    else if (!after) kind = 'only_earlier';
+    else {
+      changedFields = fields.filter(k => comparable(k, before[k]) !== comparable(k, after[k]));
+      if (changedFields.length) kind = 'changed';
+      const a = isoDay(before.data_as_of), b = isoDay(after.data_as_of);
+      if (a && b && b < a) reversedSourceDates++;
+    }
+    counts[kind]++;
+    return { permit_number: id, address: after?.address || before?.address || '', kind, changed_fields: changedFields, before: before || null, after: after || null, purchasing_status: 'UNVERIFIED', official_permit_url: sourceLink(id) };
+  });
+  if (reversedSourceDates) warnings.push(reversedSourceDates + ' matched permits have an older Data As Of date in the later input. Check export order and filters; no chronological update is established.');
+  return { rows, counts, fields, warnings, earlier_stats: earlier.stats, later_stats: later.stats };
+}
+
+function selectComparisonRows(result, view = 'changes') {
+  if (view === 'all') return result.rows;
+  if (view === 'changes') return result.rows.filter(r => r.kind !== 'unchanged');
+  if (!['only_later', 'only_earlier', 'changed', 'unchanged', 'ambiguous'].includes(view)) throw new Error('Choose a supported comparison view.');
+  return result.rows.filter(r => r.kind === view);
+}
+
+function comparisonCSV(rows, exportedAt) {
+  const fields = ['permit_number', 'address', 'comparison_result', 'changed_fields', 'earlier_status', 'later_status', 'earlier_status_date', 'later_status_date', 'earlier_filed_date', 'later_filed_date', 'earlier_data_as_of', 'later_data_as_of', 'earlier_description', 'later_description', 'earlier_duplicate_rows', 'later_duplicate_rows', 'purchasing_status', 'official_permit_url', 'exported_at_utc'];
+  const records = rows.map(r => [r.permit_number, r.address, r.kind, r.changed_fields.join(' | '), r.before?.status, r.after?.status, r.before?.status_date, r.after?.status_date, r.before?.filed_date, r.after?.filed_date, r.before?.data_as_of, r.after?.data_as_of, r.before?.description, r.after?.description, r.before?.duplicate_rows, r.after?.duplicate_rows, r.purchasing_status, r.official_permit_url, exportedAt]);
+  return '\uFEFF' + [fields, ...records].map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
+}
+
+const EARLIER_EXAMPLE = "\"permit_number\",\"street_number\",\"street_name\",\"street_suffix\",\"description\",\"status\",\"status_date\",\"filed_date\",\"primary_address_flag\",\"data_as_of\"\r\n\"202608196841\",\"1850\",\"Polk\",\"St\",\"(e) empty ground floor retail unit to restaurant w/ no cooking. (n) plumbing, (n) electrical, (n) commercial food service equipment for coffee & tea preparation. (n) finishes & lighing throughout,(n) millwork all partitions are (e) to remain restrooms are (e) to remain.mep deferred\",\"filed\",\"2026-08-19T11:40:20.000\",\"2026-08-19T11:40:20.000\",\"Y\",\"2026-10-10T01:05:03.000\"\r\n\"202609148084\",\"1114\",\"Bryant\",\"St\",\"add in new walk-in cooler at (e) restaurant space. new hand sink in storage room.\",\"issued\",\"2026-09-29T12:31:33.000\",\"2026-09-14T13:38:30.000\",\"Y\",\"2026-10-01T01:05:04.000\"\r\n\"202610079164\",\"2109\",\"Polk\",\"St\",\"equipment installation for restaurant (no layout change)\",\"filed\",\"2026-10-07T16:29:04.000\",\"2026-10-07T16:29:04.000\",\"Y\",\"2026-10-09T01:05:03.000\"\r\n";
+const LATER_EXAMPLE = "\"permit_number\",\"street_number\",\"street_name\",\"street_suffix\",\"description\",\"status\",\"status_date\",\"filed_date\",\"primary_address_flag\",\"data_as_of\"\r\n\"202608196841\",\"1850\",\"Polk\",\"St\",\"(e) empty ground floor retail unit to restaurant w/ no cooking. (n) plumbing, (n) electrical, (n) commercial food service equipment for coffee & tea preparation. (n) finishes & lighing throughout,(n) millwork all partitions are (e) to remain restrooms are (e) to remain.mep deferred\",\"issued\",\"2026-10-19T15:24:48.000\",\"2026-08-19T11:40:20.000\",\"Y\",\"2026-10-20T01:05:02.000\"\r\n\"202609148084\",\"1114\",\"Bryant\",\"St\",\"add in new walk-in cooler at (e) restaurant space. new hand sink in storage room.\",\"issued\",\"2026-09-29T12:31:33.000\",\"2026-09-14T13:38:30.000\",\"Y\",\"2026-10-01T01:05:04.000\"\r\n\"202610079164\",\"2109\",\"Polk\",\"St\",\"equipment installation for restaurant (no layout change). installation of power door operator per da-04.\",\"filed\",\"2026-10-07T16:29:04.000\",\"2026-10-07T16:29:04.000\",\"Y\",\"2026-10-20T01:05:02.000\"\r\n";
+const initializeComparison = () => {
+  const root = document.getElementById('sf-permit-csv-compare');
+  if (!root || root.dataset.ready) return;
+  root.dataset.ready = 'yes';
+  const q = key => root.querySelector('[data-compare="' + key + '"]');
+  const labels = { changed: 'Compared fields changed', only_later: 'Only in later export', only_earlier: 'Only in earlier export', unchanged: 'Unchanged in compared fields', ambiguous: 'Ambiguous duplicate versions' };
+  let result = null, objectURL = '';
+  const message = text => { q('status').textContent = text; };
+  const clearResults = () => {
+    result = null; q('rows').replaceChildren(); q('warnings').replaceChildren(); q('results').hidden = true; q('download').disabled = true;
+    if (objectURL) { URL.revokeObjectURL(objectURL); objectURL = ''; }
+  };
+  const render = () => {
+    q('rows').replaceChildren();
+    const rows = selectComparisonRows(result, q('view').value);
+    q('download').disabled = rows.length === 0;
+    q('display-limit').textContent = rows.length > 200 ? 'Showing the first 200 of ' + rows.length + ' selected records. The CSV includes all selected records.' : rows.length + ' selected records shown.';
+    for (const r of rows.slice(0, 200)) {
+      const tr = document.createElement('tr');
+      const record = document.createElement('td'), link = document.createElement('a');
+      link.href = r.official_permit_url; link.textContent = r.permit_number; link.target = '_blank'; link.rel = 'noopener';
+      record.append(document.createTextNode(r.address || 'Address unavailable'), document.createElement('br'), link);
+      const comparison = document.createElement('td'); comparison.textContent = labels[r.kind];
+      if (r.changed_fields.length) { const p = document.createElement('p'); p.textContent = r.changed_fields.join(', '); comparison.append(p); }
+      const before = document.createElement('td'), after = document.createElement('td');
+      for (const [cell, value] of [[before, r.before], [after, r.after]]) {
+        if (!value) { cell.textContent = 'Not in this pasted export'; continue; }
+        cell.textContent = 'Status: ' + (value.status || 'unknown') + ' | Status date: ' + (value.status_date || 'unknown') + ' | Data As Of: ' + (value.data_as_of || 'unknown');
+        const details = document.createElement('details'), summary = document.createElement('summary'), scope = document.createElement('p');
+        summary.textContent = 'Read supplied scope'; scope.textContent = value.description || 'No description supplied'; details.append(summary, scope); cell.append(details);
+      }
+      tr.append(record, comparison, before, after); q('rows').append(tr);
+    }
+  };
+  const compare = () => {
+    clearResults();
+    try {
+      result = compareSnapshots(q('earlier').value, q('later').value);
+      const c = result.counts;
+      message(c.changed + ' changed; ' + c.only_later + ' only in later; ' + c.only_earlier + ' only in earlier; ' + c.ambiguous + ' ambiguous; ' + c.unchanged + ' unchanged in compared fields. Purchasing is unverified.');
+      for (const text of result.warnings) { const p = document.createElement('p'); p.textContent = text; q('warnings').append(p); }
+      q('compared-fields').textContent = 'Compared fields: ' + result.fields.join(', ') + '. Dates are compared at calendar-day precision. Data As Of differences alone are not a permit change.';
+      q('source-counts').textContent = 'Source rows: ' + result.earlier_stats.sourceRows + ' earlier / ' + result.later_stats.sourceRows + ' later. Secondary-address rows excluded: ' + result.earlier_stats.secondaryRows + ' / ' + result.later_stats.secondaryRows + '.';
+      q('results').hidden = false; render();
+    } catch (error) { message(error.message); }
+  };
+  q('compare').addEventListener('click', compare);
+  q('example').addEventListener('click', () => { q('earlier').value = EARLIER_EXAMPLE; q('later').value = LATER_EXAMPLE; q('example-note').hidden = false; q('view').value = 'all'; compare(); });
+  for (const key of ['earlier', 'later']) q(key).addEventListener('input', () => { clearResults(); q('example-note').hidden = true; message('Input changed. Select Compare exports to apply both inputs.'); });
+  q('view').addEventListener('change', () => { if (result) render(); });
+  q('clear').addEventListener('click', () => { q('earlier').value = ''; q('later').value = ''; q('example-note').hidden = true; clearResults(); message('Inputs cleared. Paste two comparable DataSF CSV exports or load the dated example.'); });
+  q('download').addEventListener('click', () => {
+    if (!result) return;
+    const rows = selectComparisonRows(result, q('view').value);
+    if (!rows.length) return;
+    if (objectURL) URL.revokeObjectURL(objectURL);
+    objectURL = URL.createObjectURL(new Blob([comparisonCSV(rows, new Date().toISOString())], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = objectURL; a.download = 'sf-permit-snapshot-comparison.csv'; root.append(a); a.click(); a.remove();
+    message(rows.length + ' selected records exported with both source dates and UNVERIFIED purchasing status. Export time is not a source refresh.');
+  });
+  for (const key of ['compare', 'example', 'clear']) q(key).disabled = false;
+  message('Ready. Paste two comparable DataSF CSV exports or load the dated example.');
+};
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeComparison, { once: true }); else initializeComparison();
+
+</script>
+</body></html>

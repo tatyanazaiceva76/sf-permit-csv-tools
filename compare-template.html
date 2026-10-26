@@ -1,0 +1,56 @@
+<p>Comparing two permit exports helps separate changes worth inspecting from records you already reviewed. This free tool matches San Francisco DataSF CSV rows by permit number and keeps the earlier and later source values together. <strong>A changed permit is not a confirmed equipment purchase.</strong></p>
+<p>It runs in this page. Pasted CSV data are not uploaded or saved by this tool. No signup, purchase, live lookup or scheduled monitoring is involved.</p>
+<section id="sf-permit-csv-compare" aria-label="Compare two SF permit CSV exports">
+<style>
+#sf-permit-csv-compare {border:1px solid #b5c4c8;padding:18px;border-radius:8px;margin:22px 0;background:#fafcfb;color:#172b33;font:16px/1.55 system-ui,sans-serif}
+#sf-permit-csv-compare * {box-sizing:border-box}
+#sf-permit-csv-compare .compare-inputs {display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+#sf-permit-csv-compare textarea {display:block;width:100%;min-height:185px;margin:8px 0;font:13px/1.5 ui-monospace,monospace;background:#fff;color:#172b33;border:1px solid #8b9ca3;border-radius:4px;padding:10px}
+#sf-permit-csv-compare button,#sf-permit-csv-compare select {font:inherit;padding:8px 12px;margin:5px 5px 5px 0;border:1px solid #536f79;border-radius:4px;background:#fff;color:#172b33}
+#sf-permit-csv-compare button:not(:disabled) {cursor:pointer}
+#sf-permit-csv-compare button:disabled {opacity:.55}
+#sf-permit-csv-compare .compare-table-wrap {overflow-x:auto}
+#sf-permit-csv-compare table {border-collapse:collapse;width:100%;min-width:700px;font-size:14px}
+#sf-permit-csv-compare th,#sf-permit-csv-compare td {border:1px solid #b5c4c8;padding:10px;text-align:left;vertical-align:top}
+#sf-permit-csv-compare th {background:#e8f1ef}
+#sf-permit-csv-compare [hidden] {display:none!important}
+#sf-permit-csv-compare a {color:#145270;text-decoration:underline}
+#sf-permit-csv-compare [role="status"] {font-weight:600}
+</style>
+<h2>Compare two CSV snapshots</h2>
+<p>Use exports from the same dataset with the same search filters and coverage. Required columns: <strong>Permit Number</strong> and <strong>Status</strong> (or Current Status). API-style headers such as <code>permit_number</code> work. Other shared fields are compared when present.</p>
+<div class="compare-inputs">
+<label>Earlier CSV export<textarea data-compare="earlier" spellcheck="false" autocomplete="off" placeholder="Paste header and rows from the earlier export"></textarea></label>
+<label>Later CSV export<textarea data-compare="later" spellcheck="false" autocomplete="off" placeholder="Paste header and rows from the later export"></textarea></label>
+</div>
+<div><button type="button" data-compare="compare" disabled>Compare exports</button><button type="button" data-compare="example" disabled>Load three dated examples</button><button type="button" data-compare="clear" disabled>Clear inputs</button></div>
+<p data-compare="status" role="status" aria-live="polite">JavaScript is needed for this in-page tool. The explanation and source links below remain available.</p>
+<p data-compare="example-note" hidden>The earlier rows were saved in the October 11, 2026 snapshot; the later rows were checked October 20. Source-row Data As Of dates differ and are preserved. At 1850 Polk St the saved status changes from filed to issued, dated October 19. At 2109 Polk St the description gains a power-door-operator clause while its status stays filed. At 1114 Bryant St the compared fields are unchanged. These are historical examples, not a fresh source query.</p>
+<div data-compare="warnings" aria-live="polite"></div>
+<div data-compare="results" hidden>
+<p data-compare="compared-fields"></p><p data-compare="source-counts"></p>
+<label>Result view <select data-compare="view"><option value="changes">Changes and unmatched records</option><option value="changed">Compared fields changed</option><option value="only_later">Only in later export</option><option value="only_earlier">Only in earlier export</option><option value="ambiguous">Ambiguous duplicates</option><option value="unchanged">Unchanged in compared fields</option><option value="all">All compared permits</option></select></label>
+<button type="button" data-compare="download" disabled>Download selected comparison CSV</button>
+<p data-compare="display-limit"></p>
+<div class="compare-table-wrap"><table><caption>Permit comparison — purchasing status unverified</caption><thead><tr><th scope="col">Permit</th><th scope="col">Comparison</th><th scope="col">Earlier supplied record</th><th scope="col">Later supplied record</th></tr></thead><tbody data-compare="rows"></tbody></table></div>
+</div>
+</section>
+<h2>What each result means</h2>
+<ul>
+<li><strong>Only in later export:</strong> the permit ID is absent from your earlier input. It may be an older filing newly included by a changed filter, backfill or export limit. This is not proof of a new project.</li>
+<li><strong>Only in earlier export:</strong> the permit is absent from your later input. It is not established as cancelled, closed or removed from the official dataset.</li>
+<li><strong>Compared fields changed:</strong> a shared status, status date, filed date, description or address differs. Dates are compared at calendar-day precision. Inspect the supplied text and current official record.</li>
+<li><strong>Ambiguous duplicates:</strong> one input contains conflicting versions of a permit ID. The tool does not pick a reliable current version or count it as a confirmed change.</li>
+<li><strong>Unchanged in compared fields:</strong> no difference was found in the fields present in both inputs. A newer Data As Of value alone is excluded from change detection. Other columns and changes between snapshots are outside this comparison.</li>
+</ul>
+<h2>Use matching exports and retain the dates</h2>
+<p>Start with the <a href="https://data.sf.gov/Housing-and-Buildings/Building-Permits/i98e-djp9">official DataSF Building Permits table</a>. Apply the same filters before exporting each time. Prefer the full filtered export over a truncated screen sample. This tool does not prove that either export is complete.</p>
+<p>Primary Address Flag values of N, No, False or 0 are excluded. Missing or unknown primary flags are reported. Repeated permit IDs are grouped; conflicting compared values or source dates produce an ambiguous result. Rows without permit IDs cannot be matched and are reported as excluded.</p>
+<p>Each input is limited to 10,000 rows and roughly two million characters. The table shows at most 200 selected records; the comparison CSV includes every selected result. Source dates and supplied descriptions remain in the download. CSV cells that could be interpreted as spreadsheet formulas are prefixed with an apostrophe.</p>
+<p>For the dated example, check <a href="https://data.sf.gov/resource/i98e-djp9.json?permit_number=202608196841&amp;primary_address_flag=Y">1850 Polk St / permit 202608196841</a>. The saved October 20 row records issuance on October 19; it does not prove a coffee-equipment order is still open.</p>
+<p>For a scope-text change, compare <a href="https://data.sf.gov/resource/i98e-djp9.json?permit_number=202610079164&amp;primary_address_flag=Y">2109 Polk St / permit 202610079164</a>. The later saved description adds “installation of power door operator per da-04.” That clause does not establish an additional kitchen-equipment requirement or a new buyer.</p>
+<h2>Continue the research</h2>
+<p><strong>Questions about field coverage, source dates or the CSV format?</strong> <a href="https://payhip.com/PuzzleForensics/contact">Send a product question</a> and mention SF Kitchen Pipeline / CSV comparison. The form belongs to our existing Puzzle Forensics store, which handles product questions for this project. No pasted CSV is automatically included.</p>
+<p>Need a shortlist first? Use the <a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/free-sf-restaurant-permit-csv-filter.html">free restaurant permit CSV filter</a>. For interpretation, read the <a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/sf-restaurant-equipment-leads-check.html">six dated equipment-permit examples</a>.</p>
+<p>SF Kitchen Pipeline is an AI-assisted research product. Its separate <a href="https://payhip.com/b/Ck9Hu">October launch snapshot costs $39 once</a> and contains 20 selected projects plus dated research files. The browser tools are free without buying it. No purchaser, open order, live refresh, future update service or City affiliation is claimed.</p>
+<!-- SCRIPT -->

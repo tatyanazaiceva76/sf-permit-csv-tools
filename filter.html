@@ -1,0 +1,303 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SF restaurant permit CSV trade filters</title></head><body style="max-width:1050px;margin:32px auto;padding:0 16px;font:17px/1.65 system-ui,sans-serif"><h1>SF restaurant permit CSV trade filters</h1><p>Turn a San Francisco Building Permits CSV into a food-service research shortlist. Filter by scope and filing date, collapse repeated permit IDs, and flag possible references to earlier permits. <strong>Free, no signup.</strong> The tool processes the text in this page; its code does not upload your CSV or request live records.</p>
+<style>
+#sf-permit-csv-tool{--sf-ink:#193837;--sf-accent:#12655a;--sf-line:#cddbd7;--sf-muted:#4b625e;background:#f4f8f6;border:1px solid var(--sf-line);border-radius:14px;padding:clamp(16px,4vw,28px);margin:24px 0;color:var(--sf-ink);font:16px/1.6 system-ui,sans-serif}
+#sf-permit-csv-tool *{box-sizing:border-box}
+#sf-permit-csv-tool h2{font-size:1.45rem;line-height:1.3;margin:0 0 12px}
+#sf-permit-csv-tool label{display:block;font-weight:650;margin:12px 0 5px}
+#sf-permit-csv-tool textarea,#sf-permit-csv-tool input,#sf-permit-csv-tool select{width:100%;background:#fff;border:1px solid #78968d;border-radius:6px;padding:10px;color:#193837;font:inherit}
+#sf-permit-csv-tool textarea{min-height:180px;font:13px/1.5 ui-monospace,monospace}
+#sf-permit-csv-tool .sf-controls{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+#sf-permit-csv-tool .sf-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+#sf-permit-csv-tool button{border:1px solid var(--sf-accent);border-radius:7px;padding:10px 15px;background:var(--sf-accent);color:#fff;font:600 15px/1.4 system-ui,sans-serif;cursor:pointer}
+#sf-permit-csv-tool button.sf-secondary{background:#fff;color:var(--sf-accent)}
+#sf-permit-csv-tool button:disabled{opacity:.45;cursor:default}
+#sf-permit-csv-tool :focus-visible{outline:3px solid #edac3a;outline-offset:3px}
+#sf-permit-csv-tool [data-tool=status]{background:#e4efea;padding:12px;border-radius:7px}
+#sf-permit-csv-tool .sf-small{font-size:14px;color:var(--sf-muted)}
+#sf-permit-csv-tool .sf-table{overflow-x:auto}
+#sf-permit-csv-tool table{border-collapse:collapse;width:100%;min-width:590px;font-size:14px;background:#fff}
+#sf-permit-csv-tool th,#sf-permit-csv-tool td{border:1px solid var(--sf-line);padding:12px;vertical-align:top;text-align:left}
+#sf-permit-csv-tool th{background:#e4efea}
+#sf-permit-csv-tool a{color:#075c53;text-decoration:underline}
+#sf-permit-csv-tool details{margin-top:8px}
+#sf-permit-csv-tool summary{cursor:pointer;font-weight:650}
+#sf-permit-csv-tool [hidden]{display:none!important}
+@media(max-width:520px){#sf-permit-csv-tool .sf-controls{grid-template-columns:1fr}}
+</style>
+<section id="sf-permit-csv-tool" aria-label="SF restaurant permit CSV filter">
+<h2>Review a permit CSV</h2>
+<p class="sf-small">Use a comma-separated export with Permit Number, Description and Filed Date. Street and status columns are retained when supplied. Maximum: 2 MB and 10,000 rows.</p>
+<label for="sf-csv-input">CSV text</label>
+<textarea id="sf-csv-input" data-tool="input" spellcheck="false" placeholder="Paste the header row and permit records here"></textarea>
+<div class="sf-controls">
+<div><label for="sf-csv-since">Filed on or after (optional)</label><input id="sf-csv-since" data-tool="since" type="date" /></div>
+<div><label for="sf-csv-mode">Scope filter</label><select id="sf-csv-mode" data-tool="mode"><option value="all">Food-service and equipment wording</option><option value="equipment">Kitchen / hood / walk-in / equipment plan</option><option value="hood">Hood / kitchen-ventilation context</option><option value="refrigeration">Walk-in / refrigeration wording</option><option value="coffee">Coffee / tea context</option></select></div>
+</div>
+<div class="sf-actions">
+<button type="button" data-tool="review" disabled>Review CSV</button>
+<button type="button" data-tool="examples" class="sf-secondary" disabled>Load 4 dated examples</button>
+<button type="button" data-tool="equipment-examples" class="sf-secondary" disabled>Load 3 equipment examples</button>
+<button type="button" data-tool="clear" class="sf-secondary" disabled>Clear input</button>
+</div>
+<p role="status" aria-live="polite" data-tool="status">JavaScript is needed for local CSV processing. The source links and worked examples below remain readable.</p>
+<p data-tool="example-note" class="sf-small" hidden>The four built-in examples were checked October 26, 2026 UTC; the source rows retain October 21 or 24 data-as-of dates. Loading them is a demonstration, not a live search.</p>
+<p data-tool="equipment-note" class="sf-small" hidden>These three earlier examples come from dated saved source rows, not a fresh lookup: 1114 Bryant St, data as of October 1; 2031 Chestnut St, October 11; 1850 Polk St, October 20, 2026. A later equipment-plan revision at 2031 Chestnut is in the four-example set. Neither set establishes a current purchase.</p>
+<p class="sf-small"><a data-tool="share" href="#sf-permit-csv-tool">Open shareable view of these filters</a>. The link includes your filter settings and, if selected, the built-in example set. It never includes pasted CSV text. A recipient must paste their own CSV when custom data is used.</p>
+<div data-tool="warnings" class="sf-small"></div>
+<div data-tool="results" hidden>
+<div class="sf-table"><table><thead><tr><th>Address / permit</th><th>Dates / recorded status</th><th>Scope / checks</th></tr></thead><tbody data-tool="rows"></tbody></table></div>
+<div class="sf-actions"><button type="button" data-tool="export" disabled>Download matched CSV</button></div>
+</div>
+<p class="sf-small">Purchasing status is always UNVERIFIED. A keyword match, active permit or address association does not identify a buyer, establish an open order or prove a new restaurant opening.</p>
+</section>
+<h2>How to use it</h2>
+<ol>
+<li>Open the official <a href="https://data.sf.gov/Housing-and-Buildings/Building-Permits/i98e-djp9/about_data">DataSF Building Permits dataset, i98e-djp9</a> and obtain a CSV export. Keep the column headers and the source dates. You can filter the official dataset before exporting a smaller file.</li>
+<li>Open the CSV as text, copy it with its header, and paste it above. The tool accepts display headers such as “Permit Number” and API-style names such as “permit_number”.</li>
+<li>Choose a filing cutoff or a scope filter, then select Review CSV. Separate modes cover hood context, refrigeration wording and coffee/tea context. Read the original scope before treating a match as useful.</li>
+<li>Download matched CSV for your own research. It retains permit IDs, source/status dates, reference candidates, duplicate flags, official record links and unverified purchasing status.</li>
+</ol>
+<h2>What the filters establish</h2>
+<p>The broad filter looks for restaurant, coffee shop, coffee bar, café, or walk-in cooler/freezer wording. The narrower filter also requires kitchen, hood, walk-in cooler/freezer, or equipment plan/schedule/layout wording. A generic equipment-room mention does not satisfy that narrower rule. These are text rules; they can miss relevant projects or include unrelated work. A cabinet-only job can still match the broad filter and is flagged for inspection.</p>
+<p>The broad rule also accepts food-service, food-preparation, beverage-bar and commercial-kitchen wording. Every trade mode first requires food-service context. Cabinet-only exclusions do not pass trade modes. Hood context can mean equipment placed under an existing hood; it does not imply hood replacement. Refrigeration wording can describe removal rather than installation. Coffee/tea context does not establish a coffee-machine purchase.</p>
+<h2>Open an equipment-specific example</h2>
+<ul>
+<li><a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/free-sf-restaurant-permit-csv-filter.html?scope=hood&amp;examples=equipment#sf-permit-csv-tool">Hood context: 2031 Chestnut St</a> — the saved scope describes equipment under a hood in an existing restaurant. It does not specify a new hood order.</li>
+<li><a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/free-sf-restaurant-permit-csv-filter.html?scope=refrigeration&amp;examples=equipment#sf-permit-csv-tool">Walk-in cooler wording: 1114 Bryant St</a> — a new cooler and hand sink are stated in the older source. Purchasing status remains unverified.</li>
+<li><a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/free-sf-restaurant-permit-csv-filter.html?scope=coffee&amp;examples=equipment#sf-permit-csv-tool">Coffee/tea context: 1850 Polk St</a> — the scope states commercial food-service equipment and no cooking. The saved October 20 row records issuance on October 19; it does not prove present procurement.</li>
+</ul>
+<p>When Primary Address Flag is supplied, rows explicitly marked secondary are skipped. Repeated permit IDs retain their first remaining row and receive a duplicate warning; conflicting versions need source review. A reference such as “PA# 202609037630” is a candidate relationship, not an automatic project merge. Distinct permit IDs are not counted as distinct buyers.</p>
+<p>Files without source freshness or primary-address columns receive a warning. The tool does not infer missing owner names, contacts, suppliers, opening dates or procurement. The CSV export time records your download, not a fresh government update.</p>
+<h2>Inspect the four worked examples</h2>
+<p><a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/new-sf-restaurant-permits-october-1522.html">The October 26 worked table</a> explains the two additional research projects, one existing-project revision and one cabinet-replacement exclusion. It also includes an ABC license-address cross-check. <a href="https://sfkitchenfieldnotes.blogspot.com/2026/10/sf-restaurant-equipment-leads-check.html">Six earlier free examples</a> show the original snapshot format.</p>
+<p>The optional <a href="https://payhip.com/b/Ck9Hu?utm_source=blogger&amp;utm_medium=organic&amp;utm_campaign=permit_csv_filter_20261026">SF Kitchen Pipeline research download costs $39 once</a>. It includes a separately dated, selected 20-project October 11 snapshot and dated addenda. The included 00_START_HERE archive gathers the research files in one download, with an offline copy of the original two-mode CSV filter. It is not a subscription or a promise of live leads. The current web filters are free without buying it. <a href="https://payhip.com/PuzzleForensics/contact">Ask about product Ck9Hu</a> before buying.</p>
+<p><small>Independent original tool prepared by SF Kitchen Pipeline with an AI assistant using public-record examples. No city affiliation or endorsement. DataSF records and dates can change. No live-record retrieval, owner-contact enrichment, verified buyer list or recurring updates are supplied by this page.</small></p>
+<script type="module">
+const MAX_CHARS = 2000000;
+function parseCSV(input) {
+  const text = String(input).replace(/^\uFEFF/, '');
+  if (text.length > MAX_CHARS) throw new Error('Use a CSV smaller than 2 MB. Filter or split the official export first.');
+  const rows = [];
+  let row = [], cell = '', quoted = false, closed = false;
+  const field = () => { row.push(cell); cell = ''; closed = false; };
+  const line = () => {
+    field();
+    if (row.some(value => value.trim() !== '')) rows.push(row);
+    row = [];
+    if (rows.length > 10001) throw new Error('Use at most 10,000 source rows per review.');
+  };
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') { quoted = false; closed = true; }
+      else cell += c;
+    } else if (c === ',') field();
+    else if (c === '\r' || c === '\n') { if (c === '\r' && text[i + 1] === '\n') i++; line(); }
+    else if (c === '"') {
+      if (cell || closed) throw new Error('Malformed CSV quotation. Paste a comma-separated CSV export, including its header.');
+      quoted = true;
+    } else if (closed) {
+      if (!/\s/.test(c)) throw new Error('Unexpected text after a closing CSV quote.');
+    } else cell += c;
+  }
+  if (quoted) throw new Error('The CSV ends inside a quoted field. Paste the complete export.');
+  if (cell || row.length || closed) line();
+  return rows;
+}
+function normalizedHeader(value) { return value.toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function isoDay(value) {
+  const s = String(value || '').trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s])/.exec(s);
+  if (!m) {
+    const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:$|\s)/.exec(s);
+    if (us) m = [us[0], us[3], us[1].padStart(2, '0'), us[2].padStart(2, '0')];
+  }
+  if (!m) return '';
+  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]), date = new Date(Date.UTC(y, mo - 1, d));
+  return y >= 1900 && y <= 2200 && date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d ? m[1] + '-' + m[2] + '-' + m[3] : '';
+}
+function hasEquipmentWording(description) {
+  return /\bkitchen\b|\bhood\b|walk[- ]in\s+(cooler|freezer)|\bequipment\s+(plan|schedule|layout)\b/i.test(description);
+}
+const SCOPE_MODES = ['all', 'equipment', 'hood', 'refrigeration', 'coffee'];
+function hasFoodServiceWording(description) {
+  return /\brestaurant\b|\bcoffee\s+(shop|bar)\b|\bcaf[e\u00e9]\b|\bfood[- ]service\b|\bfood\s+prep(?:aration)?\b|\bbeverage\s+bar\b|\bcommercial\s+kitchen\b|walk[- ]in\s+(cooler|freezer)/i.test(description);
+}
+function matchesScope(description, mode) {
+  if (!hasFoodServiceWording(description)) return false;
+  if (mode === 'all') return true;
+  if (scopeReview(description).startsWith('Cabinet')) return false;
+  if (mode === 'equipment') return hasEquipmentWording(description);
+  if (mode === 'hood') return /\bhood\b|\bgrease\s+duct\b|\bmake[- ]?up\s+air\b|\bkitchen\s+(exhaust|ventilation)\b/i.test(description);
+  if (mode === 'refrigeration') return /walk[- ]in\s+(cooler|freezer)|reach[- ]in\s+(cooler|freezer)|\brefrigerat(?:ion|or|ors|ed)\b|\bcold\s+storage\b/i.test(description);
+  if (mode === 'coffee') return /\bcoffee\b|\bespresso\b|\btea\b/i.test(description);
+  return false;
+}
+function scopeMatchNote(description, mode) {
+  if (mode === 'hood') return 'Hood / kitchen-ventilation context \u2014 does not establish a new or replacement hood order';
+  if (mode === 'refrigeration') return 'Refrigeration wording \u2014 check installation versus removal and present procurement';
+  if (mode === 'coffee') return 'Coffee / tea context \u2014 a machine purchase is not established';
+  return scopeReview(description);
+}
+function scopeReview(description) {
+  if (/\bcabinets?\b/i.test(description) && /no food|no plumbing|no electrical/i.test(description)) return 'Cabinet wording \u2014 inspect; equipment need not established';
+  if (hasEquipmentWording(description)) return 'Kitchen, hood, walk-in or equipment-plan wording \u2014 inspect original scope';
+  return 'Food-service wording \u2014 equipment need not established';
+}
+function referenceCandidates(description, ownPermit) {
+  return [...new Set(Array.from(description.matchAll(/(?:ref(?:erence)?\.?(?:\s+(?:pa|permit|application))?|pa|permit|application)[\s:#.\-]*(20\d{10})\b/gi), m => m[1]).filter(id => id !== ownPermit))];
+}
+function sourceLink(permit) {
+  return 'https://data.sf.gov/resource/i98e-djp9.json?permit_number=' + encodeURIComponent(permit) + '&primary_address_flag=Y';
+}
+function reviewCSV(input, { since = '', mode = 'all' } = {}) {
+  if (!SCOPE_MODES.includes(mode)) throw new Error('Choose a supported scope filter.');
+  if (since && isoDay(since) !== since) throw new Error('Choose a valid filed-on-or-after date.');
+  const table = parseCSV(input);
+  if (table.length < 2) throw new Error('Paste the header and at least one data row.');
+  const header = table[0].map(normalizedHeader);
+  const index = (...aliases) => {
+    const found = aliases.map(a => header.indexOf(a)).find(i => i >= 0);
+    return found === undefined ? -1 : found;
+  };
+  const columns = {
+    permit: index('permitnumber'), description: index('description'), filed: index('fileddate'),
+    address: index('address', 'businessaddress'), number: index('streetnumber'), numberSuffix: index('streetnumbersuffix'),
+    street: index('streetname'), suffix: index('streetsuffix'), status: index('status', 'currentstatus'),
+    statusDate: index('statusdate', 'currentstatusdate'), asOf: index('dataasof'), primary: index('primaryaddressflag')
+  };
+  if ([columns.permit, columns.description, columns.filed].some(i => i < 0)) throw new Error('Required columns: Permit Number, Description and Filed Date. API-style headers such as permit_number also work.');
+  if (new Set(header).size !== header.length) throw new Error('The CSV has duplicate column names. Use one unmodified DataSF export.');
+  const warnings = [];
+  if (columns.primary < 0) warnings.push('No Primary Address Flag column: address-primary status was not checked.');
+  if (columns.asOf < 0) warnings.push('No Data As Of column: source freshness is unknown.');
+  const stats = { sourceRows: table.length - 1, duplicateRows: 0, secondaryRows: 0, missingPermitRows: 0, unparsedFiledDates: 0 };
+  const permits = new Map();
+  for (const raw of table.slice(1)) {
+    if (raw.length !== header.length) throw new Error('A data row has a different number of columns from the header. Check the CSV export.');
+    const get = key => columns[key] < 0 ? '' : String(raw[columns[key]] || '').trim();
+    if (columns.primary >= 0 && /^(n|no|false|0)$/i.test(get('primary'))) { stats.secondaryRows++; continue; }
+    const id = get('permit');
+    if (!id) { stats.missingPermitRows++; continue; }
+    const address = get('address') || [get('number') + get('numberSuffix'), get('street'), get('suffix')].filter(Boolean).join(' ');
+    const r = {
+      permit_number: id, address, filed_date: isoDay(get('filed')), status: get('status'),
+      status_date: isoDay(get('statusDate')), data_as_of: isoDay(get('asOf')), description: get('description'),
+      duplicate_source_rows: 0, address_conflict: false, primary_address_verified: /^y(?:es)?$/i.test(get('primary'))
+    };
+    if (!r.filed_date) stats.unparsedFiledDates++;
+    if (permits.has(id)) {
+      const existing = permits.get(id);
+      existing.duplicate_source_rows++; stats.duplicateRows++;
+      if (existing.address !== address) existing.address_conflict = true;
+      continue;
+    }
+    permits.set(id, r);
+  }
+  if (stats.duplicateRows) warnings.push('Duplicate permit IDs were collapsed to their first retained row. Compare conflicting versions in the source.');
+  if (stats.unparsedFiledDates) warnings.push('Some filed dates could not be parsed; a date filter excludes those rows.');
+  const rows = [...permits.values()].filter(r => {
+    if (!matchesScope(r.description, mode)) return false;
+    if (since && (!r.filed_date || r.filed_date < since)) return false;
+    return true;
+  }).map(r => ({
+    ...r, scope_review: scopeMatchNote(r.description, mode), scope_filter: mode, reference_permit_candidates: referenceCandidates(r.description, r.permit_number),
+    purchasing_status: 'UNVERIFIED', official_permit_url: sourceLink(r.permit_number)
+  })).sort((a, b) => b.filed_date.localeCompare(a.filed_date) || a.permit_number.localeCompare(b.permit_number));
+  return { rows, stats, warnings, since, mode };
+}
+function csvCell(value) {
+  let text = String(value ?? '');
+  if (/^[\s\u0000-\u001f]*[=+\-@]/.test(text)) text = "'" + text;
+  return '"' + text.replaceAll('"', '""') + '"';
+}
+function exportCSV(result, exportedAt) {
+  const keys = ['permit_number', 'address', 'filed_date', 'status', 'status_date', 'data_as_of', 'scope_review', 'reference_permit_candidates', 'duplicate_source_rows', 'address_conflict', 'primary_address_verified', 'purchasing_status', 'official_permit_url', 'description', 'scope_filter', 'exported_at_utc'];
+  const records = result.rows.map(row => keys.map(key => key === 'exported_at_utc' ? exportedAt : Array.isArray(row[key]) ? row[key].join(' | ') : row[key]));
+  return '\uFEFF' + [keys, ...records].map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
+}
+
+const EXAMPLE_CSV = "\"permit_number\",\"street_number\",\"street_name\",\"street_suffix\",\"description\",\"status\",\"status_date\",\"filed_date\",\"primary_address_flag\",\"record_id\",\"data_as_of\"\r\n\"202610229781\",\"1974\",\"Union\",\"St\",\"t.i. to existing ground level retail space: restroom remodel new accessory coffee bar, interior finishes and lighting. structural retrofit work at existing mezzanine level hvac equipment room for area reduction and enlarge e. rear wall opening. exterior work: replace tile finish at front facade\",\"filed\",\"2026-10-22T13:36:19.000\",\"2026-10-22T13:36:19.000\",\"Y\",\"1758736376880\",\"2026-10-24T01:05:02.000\"\r\n\"202610229747\",\"385\",\"West Portal\",\"Av\",\"interior buildout of a new restaurant space replacing previous restaurant. new plumbing, electrical, mechanical units. new kitchen, toilet rooms and front of house fixture and finishes. exterior scope is limited to service alleyway with boh kitchen support items.\",\"filed\",\"2026-10-22T08:26:49.000\",\"2026-10-22T08:26:49.000\",\"Y\",\"1758698470125\",\"2026-10-24T01:05:02.000\"\r\n\"202610199583\",\"3016\",\"Taraval\",\"St\",\"remove and replace 2 exiting deteriorated cabinets within an existing commercial coffee shop due to normal wear and tear. install new cabinets in same location with similar dimensions and functionality. no structural modifications. no plumbing or electrical. no food stored in cabinets\",\"issued\",\"2026-10-19T11:14:34.000\",\"2026-10-19T09:57:02.000\",\"Y\",\"1758506132979\",\"2026-10-21T01:05:02.000\"\r\n\"202610159474\",\"2031\",\"Chestnut\",\"St\",\"revision to pa# 202609037630: revised equipment plan for tenant improvement in an (e) restaurant space.\",\"issued\",\"2026-10-22T10:08:11.000\",\"2026-10-15T08:48:32.000\",\"Y\",\"175838371798\",\"2026-10-24T01:05:02.000\"\r\n";
+const EQUIPMENT_CSV = "\"permit_number\",\"street_number\",\"street_name\",\"street_suffix\",\"description\",\"status\",\"status_date\",\"filed_date\",\"primary_address_flag\",\"record_id\",\"data_as_of\"\r\n\"202609148084\",\"1114\",\"Bryant\",\"St\",\"add in new walk-in cooler at (e) restaurant space. new hand sink in storage room.\",\"issued\",\"2026-09-29T12:31:33.000\",\"2026-09-14T13:38:30.000\",\"Y\",\"1756743374314\",\"2026-10-01T01:05:04.000\"\r\n\"202609037630\",\"2031\",\"Chestnut\",\"St\",\"tenant improvement in an existing restaurant space. new storefront door, non-structural wall demo, new equipment under hood. relocate existing restroom door and paint exterior of building.\",\"issued\",\"2026-10-09T10:29:13.000\",\"2026-09-03T08:39:17.000\",\"Y\",\"175623471798\",\"2026-10-11T01:05:02.000\"\r\n\"202608196841\",\"1850\",\"Polk\",\"St\",\"(e) empty ground floor retail unit to restaurant w/ no cooking. (n) plumbing, (n) electrical, (n) commercial food service equipment for coffee & tea preparation. (n) finishes & lighing throughout,(n) millwork all partitions are (e) to remain restrooms are (e) to remain.mep deferred\",\"issued\",\"2026-10-19T15:24:48.000\",\"2026-08-19T11:40:20.000\",\"Y\",\"1755355524891\",\"2026-10-20T01:05:02.000\"\r\n";
+const initialize = () => {
+  const root = document.getElementById('sf-permit-csv-tool');
+  if (!root || root.dataset.ready) return;
+  root.dataset.ready = 'yes';
+  const q = name => root.querySelector('[data-tool="' + name + '"]');
+  let result = null, exportURL = '', exampleSource = '';
+  const status = text => { q('status').textContent = text; };
+  const updateShareLink = () => {
+    const url = new URL('https://sfkitchenfieldnotes.blogspot.com/2026/10/free-sf-restaurant-permit-csv-filter.html');
+    if (q('mode').value !== 'all') url.searchParams.set('scope', q('mode').value);
+    if (isoDay(q('since').value)) url.searchParams.set('since', q('since').value);
+    if (exampleSource) url.searchParams.set('examples', exampleSource);
+    url.hash = 'sf-permit-csv-tool';
+    q('share').href = url.href;
+  };
+  const clearResults = () => {
+    result = null;
+    q('rows').replaceChildren(); q('warnings').replaceChildren(); q('results').hidden = true; q('export').disabled = true;
+    if (exportURL) { URL.revokeObjectURL(exportURL); exportURL = ''; }
+  };
+  const review = () => {
+    clearResults();
+    try {
+      result = reviewCSV(q('input').value, { since: q('since').value, mode: q('mode').value });
+      const s = result.stats;
+      status(result.rows.length + ' matched permits from ' + s.sourceRows + ' source rows. ' + s.duplicateRows + ' duplicate rows collapsed; ' + s.secondaryRows + ' secondary-address rows skipped. These are research records, not verified buyers.');
+      for (const warning of result.warnings) { const p = document.createElement('p'); p.textContent = warning; q('warnings').append(p); }
+      for (const row of result.rows) {
+        const tr = document.createElement('tr');
+        const a = document.createElement('a'); a.href = row.official_permit_url; a.textContent = row.permit_number; a.target = '_blank'; a.rel = 'noopener';
+        const address = document.createElement('td'); address.append(document.createTextNode((row.address || 'Address unavailable') + ' '), document.createElement('br'), a);
+        const dates = document.createElement('td'); dates.textContent = 'Filed: ' + (row.filed_date || 'unknown') + ' \u00b7 Status: ' + (row.status || 'unknown') + ' \u00b7 Status date: ' + (row.status_date || 'unknown') + ' \u00b7 Data as of: ' + (row.data_as_of || 'unknown');
+        const note = document.createElement('td');
+        note.append(document.createTextNode(row.scope_review));
+        if (row.reference_permit_candidates.length) { const p = document.createElement('p'); p.textContent = 'Reference candidate(s), check source: ' + row.reference_permit_candidates.join(', ') + '. No extra buyer counted.'; note.append(p); }
+        if (row.duplicate_source_rows || row.address_conflict) { const p = document.createElement('p'); p.textContent = 'Duplicate source rows: ' + row.duplicate_source_rows + (row.address_conflict ? '; address conflict \u2014 inspect source.' : '.'); note.append(p); }
+        const details = document.createElement('details'), summary = document.createElement('summary'), scope = document.createElement('p');
+        summary.textContent = 'Read scope'; scope.textContent = row.description; details.append(summary, scope); note.append(details);
+        tr.append(address, dates, note); q('rows').append(tr);
+      }
+      q('results').hidden = false; q('export').disabled = result.rows.length === 0;
+      if (!result.rows.length) { const p = document.createElement('p'); p.textContent = 'No matches for these filters. This does not establish that no restaurant projects exist. Adjust the date or inspect the official source.'; q('warnings').append(p); }
+      updateShareLink();
+    } catch (error) { status(error.message); }
+  };
+  q('review').addEventListener('click', review);
+  q('examples').addEventListener('click', () => {
+    q('input').value = EXAMPLE_CSV; q('since').value = ''; q('mode').value = 'all'; exampleSource = 'original'; review();
+    q('example-note').hidden = false; q('equipment-note').hidden = true;
+  });
+  q('equipment-examples').addEventListener('click', () => {
+    q('input').value = EQUIPMENT_CSV; q('since').value = ''; exampleSource = 'equipment';
+    q('example-note').hidden = true; q('equipment-note').hidden = false; review();
+  });
+  q('clear').addEventListener('click', () => { q('input').value = ''; q('since').value = ''; q('mode').value = 'all'; exampleSource = ''; q('example-note').hidden = true; q('equipment-note').hidden = true; clearResults(); updateShareLink(); status('Paste a DataSF CSV, including its header, or load dated examples.'); });
+  for (const name of ['input', 'since', 'mode']) q(name).addEventListener('input', () => {
+    if (name === 'input') { exampleSource = ''; q('example-note').hidden = true; q('equipment-note').hidden = true; }
+    clearResults(); updateShareLink(); status('Input changed. Choose Review CSV to apply these values.');
+  });
+  q('export').addEventListener('click', () => {
+    if (!result?.rows.length) return;
+    if (exportURL) URL.revokeObjectURL(exportURL);
+    exportURL = URL.createObjectURL(new Blob([exportCSV(result, new Date().toISOString())], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = exportURL; a.download = 'sf-restaurant-permit-shortlist.csv'; root.append(a); a.click(); a.remove();
+    status(result.rows.length + ' permit rows exported. The CSV retains source dates and UNVERIFIED purchasing status; the export timestamp is not a source update.');
+  });
+  q('review').disabled = false; q('examples').disabled = false; q('equipment-examples').disabled = false; q('clear').disabled = false;
+  const requested = new URLSearchParams(window.location.search);
+  if (SCOPE_MODES.includes(requested.get('scope'))) q('mode').value = requested.get('scope');
+  if (requested.get('since') && isoDay(requested.get('since')) === requested.get('since')) q('since').value = requested.get('since');
+  if (['original', 'equipment'].includes(requested.get('examples'))) {
+    exampleSource = requested.get('examples');
+    q('input').value = exampleSource === 'equipment' ? EQUIPMENT_CSV : EXAMPLE_CSV;
+    q('example-note').hidden = exampleSource !== 'original'; q('equipment-note').hidden = exampleSource !== 'equipment'; review();
+  } else status('Ready. Paste a DataSF CSV, including its header, or load dated examples.');
+  updateShareLink();
+};
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true }); else initialize();
+
+</script>
+</body></html>
