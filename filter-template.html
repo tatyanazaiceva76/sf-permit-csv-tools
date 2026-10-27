@@ -1,4 +1,4 @@
-<p>Turn a San Francisco Building Permits CSV into a food-service research shortlist. Filter by scope and filing date, collapse repeated permit IDs, and flag possible references to earlier permits. <strong>Free, no signup.</strong> The tool processes the text in this page; its code does not upload your CSV or request live records.</p>
+<p>Turn a San Francisco Building Permits or PermitSF CSV into a food-service research shortlist. Filter by scope and filing date, collapse repeated permit IDs, and flag possible references to earlier permits. <strong>Free, no signup.</strong> The tool processes the text in this page; its code does not upload your CSV or request live records.</p>
 <style>
 #sf-permit-csv-tool{--sf-ink:#193837;--sf-accent:#12655a;--sf-line:#cddbd7;--sf-muted:#4b625e;background:#f4f8f6;border:1px solid var(--sf-line);border-radius:14px;padding:clamp(16px,4vw,28px);margin:24px 0;color:var(--sf-ink);font:16px/1.6 system-ui,sans-serif}
 #sf-permit-csv-tool *{box-sizing:border-box}
@@ -26,11 +26,11 @@
 </style>
 <section id="sf-permit-csv-tool" aria-label="SF restaurant permit CSV filter">
 <h2>Review a permit CSV</h2>
-<p class="sf-small">Use a comma-separated export with Permit Number, Description and Filed Date. Street and status columns are retained when supplied. Maximum: 2 MB and 10,000 rows.</p>
+<p class="sf-small">Use one comma-separated export. Building Permits: Permit Number, Description, Filed Date. PermitSF: recordno, description, submitted_date. Street and status columns are retained when supplied. Maximum: 2 MB and 10,000 rows.</p>
 <label for="sf-csv-input">CSV text</label>
 <textarea id="sf-csv-input" data-tool="input" spellcheck="false" placeholder="Paste the header row and permit records here"></textarea>
 <div class="sf-controls">
-<div><label for="sf-csv-since">Filed on or after (optional)</label><input id="sf-csv-since" data-tool="since" type="date" /></div>
+<div><label for="sf-csv-since">Filed / submitted on or after (optional)</label><input id="sf-csv-since" data-tool="since" type="date" /></div>
 <div><label for="sf-csv-mode">Scope filter</label><select id="sf-csv-mode" data-tool="mode"><option value="all">Food-service and equipment wording</option><option value="equipment">Kitchen / hood / walk-in / equipment plan</option><option value="hood">Hood / kitchen-ventilation context</option><option value="refrigeration">Walk-in / refrigeration wording</option><option value="coffee">Coffee / tea context</option></select></div>
 </div>
 <div class="sf-actions">
@@ -50,6 +50,10 @@
 </div>
 <p class="sf-small">Purchasing status is always UNVERIFIED. A keyword match, active permit or address association does not identify a buyer, establish an open order or prove a new restaurant opening.</p>
 </section>
+<h2>PermitSF and legacy records: choose the right source</h2>
+<p>Source coverage checked October 27, 2026 UTC. The official <a href="https://data.sf.gov/Housing-and-Buildings/Electrical-Permits-legacy-system-/ftty-kx6y">legacy electrical</a> and <a href="https://data.sf.gov/Housing-and-Buildings/Plumbing-Permits-legacy-system-/a6aw-rudh">legacy plumbing/mechanical</a> pages direct readers to <a href="https://data.sf.gov/Housing-and-Buildings/PermitSF-Permitting-Data/tyz3-vt28/about_data">PermitSF Permitting Data, tyz3-vt28</a> for permits submitted through that portal from September 14, 2026 onward, while noting legacy exceptions. PermitSF includes electrical and plumbing/mechanical permits without plans, among other types. It does not replace every Building Permits record.</p>
+<p>This filter accepts one Building Permits or PermitSF CSV at a time. PermitSF needs <code>recordno</code>, <code>description</code> and <code>submitted_date</code>; optional <code>status_detail</code>, <code>permit_issued_date</code>, <code>streetno</code>, <code>streetname</code>, <code>unit</code> and <code>data_as_of</code> are retained. Its date cutoff uses submission, not filing. Status detail stays verbatim; a last-document date is not a status-change date. CSV exports keep submitted and issued dates separate.</p>
+<p>PermitSF result links open the official dataset: choose Data and search for the displayed record number. Matching headers do not authenticate a CSV. Check the scope and dates in the source. Duplicate handling is within one export; records from different permit systems are not automatically joined. The separate snapshot-comparison tool continues to accept the Building Permits format. None of these checks establishes an equipment order.</p>
 <h2>How to use it</h2>
 <ol>
 <li>Open the official <a href="https://data.sf.gov/Housing-and-Buildings/Building-Permits/i98e-djp9/about_data">DataSF Building Permits dataset, i98e-djp9</a> and obtain a CSV export. Keep the column headers and the source dates. You can filter the official dataset before exporting a smaller file.</li>

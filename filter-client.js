@@ -27,9 +27,9 @@ const initialize = () => {
       for (const warning of result.warnings) { const p = document.createElement('p'); p.textContent = warning; q('warnings').append(p); }
       for (const row of result.rows) {
         const tr = document.createElement('tr');
-        const a = document.createElement('a'); a.href = row.official_permit_url; a.textContent = row.permit_number; a.target = '_blank'; a.rel = 'noopener';
+        const a = document.createElement('a'); a.href = row.official_permit_url; a.textContent = row.permit_number + (row.source_format === 'permitsf' ? ' (find in official table)' : ''); a.target = '_blank'; a.rel = 'noopener';
         const address = document.createElement('td'); address.append(document.createTextNode((row.address || 'Address unavailable') + ' '), document.createElement('br'), a);
-        const dates = document.createElement('td'); dates.textContent = 'Filed: ' + (row.filed_date || 'unknown') + ' · Status: ' + (row.status || 'unknown') + ' · Status date: ' + (row.status_date || 'unknown') + ' · Data as of: ' + (row.data_as_of || 'unknown');
+        const dates = document.createElement('td'); dates.textContent = (row.date_basis === 'submitted_date' ? 'Submitted: ' + (row.submitted_date || 'unknown') : 'Filed: ' + (row.filed_date || 'unknown')) + ' · Issued: ' + (row.issued_date || 'unknown') + ' · Status: ' + (row.status || 'unknown') + ' · Status date: ' + (row.status_date || 'unknown') + ' · Data as of: ' + (row.data_as_of || 'unknown');
         const note = document.createElement('td');
         note.append(document.createTextNode(row.scope_review));
         if (row.reference_permit_candidates.length) { const p = document.createElement('p'); p.textContent = 'Reference candidate(s), check source: ' + row.reference_permit_candidates.join(', ') + '. No extra buyer counted.'; note.append(p); }

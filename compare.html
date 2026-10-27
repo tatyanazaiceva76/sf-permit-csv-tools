@@ -89,7 +89,7 @@ function parseCSV(input) {
 function normalizedHeader(value) { return value.toLowerCase().replace(/[^a-z0-9]/g, ''); }
 function isoDay(value) {
   const s = String(value || '').trim();
-  let m = /^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s])/.exec(s);
+  let m = /^(\d{4})[-/](\d{2})[-/](\d{2})(?:$|[T\s])/.exec(s);
   if (!m) {
     const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:$|\s)/.exec(s);
     if (us) m = [us[0], us[3], us[1].padStart(2, '0'), us[2].padStart(2, '0')];
@@ -129,7 +129,8 @@ function scopeReview(description) {
 function referenceCandidates(description, ownPermit) {
   return [...new Set(Array.from(description.matchAll(/(?:ref(?:erence)?\.?(?:\s+(?:pa|permit|application))?|pa|permit|application)[\s:#.\-]*(20\d{10})\b/gi), m => m[1]).filter(id => id !== ownPermit))];
 }
-function sourceLink(permit) {
+function sourceLink(permit, format = 'building') {
+  if (format === 'permitsf') return 'https://data.sf.gov/Housing-and-Buildings/PermitSF-Permitting-Data/tyz3-vt28/about_data';
   return 'https://data.sf.gov/resource/i98e-djp9.json?permit_number=' + encodeURIComponent(permit) + '&primary_address_flag=Y';
 }
 function reviewCSV(input, { since = '', mode = 'all' } = {}) {
@@ -138,22 +139,26 @@ function reviewCSV(input, { since = '', mode = 'all' } = {}) {
   const table = parseCSV(input);
   if (table.length < 2) throw new Error('Paste the header and at least one data row.');
   const header = table[0].map(normalizedHeader);
+  if (header.includes('recordno') && header.includes('permitnumber')) throw new Error('Keep one source export: do not mix PermitSF recordno and Building Permits Permit Number columns.');
+  const format = header.includes('recordno') ? 'permitsf' : 'building';
   const index = (...aliases) => {
     const found = aliases.map(a => header.indexOf(a)).find(i => i >= 0);
     return found === undefined ? -1 : found;
   };
   const columns = {
-    permit: index('permitnumber'), description: index('description'), filed: index('fileddate'),
-    address: index('address', 'businessaddress'), number: index('streetnumber'), numberSuffix: index('streetnumbersuffix'),
-    street: index('streetname'), suffix: index('streetsuffix'), status: index('status', 'currentstatus'),
+    permit: format === 'permitsf' ? index('recordno') : index('permitnumber'), description: index('description'), filed: index('fileddate'), submitted: index('submitteddate'),
+    address: index('address', 'businessaddress'), number: index('streetnumber', 'streetno'), numberSuffix: index('streetnumbersuffix'),
+    street: index('streetname'), suffix: index('streetsuffix'), unit: index('unit'), status: format === 'permitsf' ? index('statusdetail') : index('status', 'currentstatus'),
+    issued: format === 'permitsf' ? index('permitissueddate') : index('issueddate'),
     statusDate: index('statusdate', 'currentstatusdate'), asOf: index('dataasof'), primary: index('primaryaddressflag')
   };
-  if ([columns.permit, columns.description, columns.filed].some(i => i < 0)) throw new Error('Required columns: Permit Number, Description and Filed Date. API-style headers such as permit_number also work.');
+  if ([columns.permit, columns.description, format === 'permitsf' ? columns.submitted : columns.filed].some(i => i < 0)) throw new Error('Required columns: Building Permits uses Permit Number, Description and Filed Date; PermitSF uses recordno, description and submitted_date. Keep the original headers.');
   if (new Set(header).size !== header.length) throw new Error('The CSV has duplicate column names. Use one unmodified DataSF export.');
   const warnings = [];
+  if (format === 'permitsf') warnings.push('PermitSF format: the cutoff uses Submitted Date, not Filed Date. Status Detail is retained verbatim; no status-change date is inferred. Record links open the official dataset: select Data and search for recordno. Matching headers do not authenticate the CSV or establish complete coverage.');
   if (columns.primary < 0) warnings.push('No Primary Address Flag column: address-primary status was not checked.');
   if (columns.asOf < 0) warnings.push('No Data As Of column: source freshness is unknown.');
-  const stats = { sourceRows: table.length - 1, duplicateRows: 0, secondaryRows: 0, missingPermitRows: 0, unparsedFiledDates: 0 };
+  const stats = { sourceRows: table.length - 1, duplicateRows: 0, secondaryRows: 0, missingPermitRows: 0, unparsedFiledDates: 0, unparsedSubmittedDates: 0 };
   const permits = new Map();
   for (const raw of table.slice(1)) {
     if (raw.length !== header.length) throw new Error('A data row has a different number of columns from the header. Check the CSV export.');
@@ -161,13 +166,15 @@ function reviewCSV(input, { since = '', mode = 'all' } = {}) {
     if (columns.primary >= 0 && /^(n|no|false|0)$/i.test(get('primary'))) { stats.secondaryRows++; continue; }
     const id = get('permit');
     if (!id) { stats.missingPermitRows++; continue; }
-    const address = get('address') || [get('number') + get('numberSuffix'), get('street'), get('suffix')].filter(Boolean).join(' ');
+    const streetAddress = get('address') || [get('number') + get('numberSuffix'), get('street'), get('suffix')].filter(Boolean).join(' ');
+    const address = streetAddress + (get('unit') && streetAddress ? ' \u00b7 Unit ' + get('unit') : '');
     const r = {
-      permit_number: id, address, filed_date: isoDay(get('filed')), status: get('status'),
-      status_date: isoDay(get('statusDate')), data_as_of: isoDay(get('asOf')), description: get('description'),
+      permit_number: id, address, filed_date: format === 'building' ? isoDay(get('filed')) : '', submitted_date: format === 'permitsf' ? isoDay(get('submitted')) : '', status: get('status'),
+      status_date: format === 'building' ? isoDay(get('statusDate')) : '', issued_date: isoDay(get('issued')), data_as_of: isoDay(get('asOf')), description: get('description'),
+      source_format: format, date_basis: format === 'permitsf' ? 'submitted_date' : 'filed_date',
       duplicate_source_rows: 0, address_conflict: false, primary_address_verified: /^y(?:es)?$/i.test(get('primary'))
     };
-    if (!r.filed_date) stats.unparsedFiledDates++;
+    if (!r[r.date_basis]) stats[format === 'permitsf' ? 'unparsedSubmittedDates' : 'unparsedFiledDates']++;
     if (permits.has(id)) {
       const existing = permits.get(id);
       existing.duplicate_source_rows++; stats.duplicateRows++;
@@ -178,15 +185,16 @@ function reviewCSV(input, { since = '', mode = 'all' } = {}) {
   }
   if (stats.duplicateRows) warnings.push('Duplicate permit IDs were collapsed to their first retained row. Compare conflicting versions in the source.');
   if (stats.unparsedFiledDates) warnings.push('Some filed dates could not be parsed; a date filter excludes those rows.');
+  if (stats.unparsedSubmittedDates) warnings.push('Some submitted dates could not be parsed; a date filter excludes those rows.');
   const rows = [...permits.values()].filter(r => {
     if (!matchesScope(r.description, mode)) return false;
-    if (since && (!r.filed_date || r.filed_date < since)) return false;
+    if (since && (!r[r.date_basis] || r[r.date_basis] < since)) return false;
     return true;
   }).map(r => ({
     ...r, scope_review: scopeMatchNote(r.description, mode), scope_filter: mode, reference_permit_candidates: referenceCandidates(r.description, r.permit_number),
-    purchasing_status: 'UNVERIFIED', official_permit_url: sourceLink(r.permit_number)
-  })).sort((a, b) => b.filed_date.localeCompare(a.filed_date) || a.permit_number.localeCompare(b.permit_number));
-  return { rows, stats, warnings, since, mode };
+    purchasing_status: 'UNVERIFIED', official_permit_url: sourceLink(r.permit_number, format)
+  })).sort((a, b) => b[b.date_basis].localeCompare(a[a.date_basis]) || a.permit_number.localeCompare(b.permit_number));
+  return { rows, stats, warnings, since, mode, format };
 }
 function csvCell(value) {
   let text = String(value ?? '');
@@ -194,7 +202,7 @@ function csvCell(value) {
   return '"' + text.replaceAll('"', '""') + '"';
 }
 function exportCSV(result, exportedAt) {
-  const keys = ['permit_number', 'address', 'filed_date', 'status', 'status_date', 'data_as_of', 'scope_review', 'reference_permit_candidates', 'duplicate_source_rows', 'address_conflict', 'primary_address_verified', 'purchasing_status', 'official_permit_url', 'description', 'scope_filter', 'exported_at_utc'];
+  const keys = ['permit_number', 'address', 'filed_date', 'status', 'status_date', 'data_as_of', 'scope_review', 'reference_permit_candidates', 'duplicate_source_rows', 'address_conflict', 'primary_address_verified', 'purchasing_status', 'official_permit_url', 'description', 'scope_filter', 'submitted_date', 'issued_date', 'source_format', 'date_basis', 'exported_at_utc'];
   const records = result.rows.map(row => keys.map(key => key === 'exported_at_utc' ? exportedAt : Array.isArray(row[key]) ? row[key].join(' | ') : row[key]));
   return '\uFEFF' + [keys, ...records].map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }

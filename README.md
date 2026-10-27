@@ -49,3 +49,9 @@ The tests cover dated examples, duplicate handling, missing fields, comparison c
 This software was developed with Codex for SF Kitchen Pipeline, which publishes free permit-research guides and separately offers a paid research product. Using these tools requires no purchase. The project is independent of the City and County of San Francisco; no government affiliation or endorsement is claimed.
 
 Software and documentation use the [Zero-Clause BSD license](LICENSE). The example permit data comes from DataSF and is covered separately in [Data sources and example dates](DATA_SOURCES.md). The repository contains small public examples rather than the paid research bundle.
+
+## PermitSF CSV support (October 27, 2026)
+
+The filter now accepts the official PermitSF `recordno`, `description` and `submitted_date` headers as a second format. It preserves submitted and issued dates separately, retains `status_detail` verbatim and uses the submitted date for the cutoff. PermitSF source links open the official table, where you can search for the record number. The original Building Permits format still works. Keep one export per review; this is not a cross-system project join. The comparison tool still accepts only the Building Permits format.
+
+The new tests use clearly synthetic `TEST` records to check these mappings; they are not current government records or new project examples. See [DATA_SOURCES.md](DATA_SOURCES.md) for the confirmed coverage boundary and source links.

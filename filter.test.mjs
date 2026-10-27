@@ -45,4 +45,39 @@ const noise = 'Permit Number,Description,Filed Date\n1,laboratory fume hood repl
 assert.equal(reviewCSV(noise,{mode:'hood'}).rows.length,0);
 assert.equal(reviewCSV(noise,{mode:'refrigeration'}).rows.length,0);
 assert.throws(()=>reviewCSV(fixture,{mode:'arbitrary'}),/supported scope/);
+// Synthetic records exercise the official PermitSF header format; these are not government examples.
+const permitSF = 'recordno,description,submitted_date,status_detail,permit_issued_date,streetno,streetname,unit,data_as_of,last_doc_date,url\n' +
+  'ELEC-TEST-001,commercial kitchen walk-in cooler wiring,2026-10-23T09:00:00.000,Complete,2026-10-24T10:00:00.000,100,TEST ST,2,2026-10-26T01:00:00.000,2026-10-25T11:00:00.000,javascript:alert(1)\n' +
+  'PLMB-TEST-002,coffee shop hand sink,2026/10/22 09:00 AM,Active - Not Issued,,200,TEST ST,,2026-10-24T01:00:00.000,,\n' +
+  'BLDG-TEST-003,residential kitchen and bath remodel,2026-10-26T09:00:00.000,Active - Issued,,300,TEST ST,,2026-10-26T01:00:00.000,,\n';
+const sf = reviewCSV(permitSF);
+assert.equal(sf.format,'permitsf');
+assert.deepEqual(sf.rows.map(r=>r.permit_number),['ELEC-TEST-001','PLMB-TEST-002']);
+assert.equal(sf.rows[0].address,'100 TEST ST · Unit 2');
+assert.equal(sf.rows[0].submitted_date,'2026-10-23');
+assert.equal(sf.rows[0].filed_date,'','Submitted Date must not be relabelled Filed Date.');
+assert.equal(sf.rows[0].issued_date,'2026-10-24');
+assert.equal(sf.rows[0].status_date,'','A last-document date is not a status-change date.');
+assert.equal(sf.rows[0].status,'Complete','Retain official status_detail even when it is outside the metadata example enum.');
+assert.equal(sf.rows[0].data_as_of,'2026-10-26');
+assert.equal(sf.rows[0].purchasing_status,'UNVERIFIED');
+assert.equal(sf.rows[0].official_permit_url,'https://data.sf.gov/Housing-and-Buildings/PermitSF-Permitting-Data/tyz3-vt28/about_data','Never use arbitrary URLs from an imported CSV.');
+assert.match(sf.warnings.join(' '),/Submitted Date, not Filed Date/);
+assert.equal(reviewCSV(permitSF,{since:'2026-10-23'}).rows.length,1);
+assert.deepEqual(reviewCSV(permitSF,{mode:'refrigeration'}).rows.map(r=>r.permit_number),['ELEC-TEST-001']);
+assert.deepEqual(reviewCSV(permitSF,{mode:'coffee'}).rows.map(r=>r.permit_number),['PLMB-TEST-002']);
+const sfExport = parseCSV(exportCSV(sf,'2026-10-27T00:00:00Z'));
+for (const [key,value] of [['filed_date',''],['submitted_date','2026-10-23'],['issued_date','2026-10-24'],['date_basis','submitted_date'],['source_format','permitsf'],['status','Complete'],['purchasing_status','UNVERIFIED']]) assert.equal(sfExport[1][sfExport[0].indexOf(key)],value);
+assert.equal(reviewCSV(permitSF+permitSF.split('\n')[1]+'\n').stats.duplicateRows,1);
+const unknownSubmitted = 'recordno,description,submitted_date\nTEST,commercial kitchen walk-in cooler,not-a-date\n';
+assert.equal(reviewCSV(unknownSubmitted).rows.length,1);
+assert.equal(reviewCSV(unknownSubmitted,{since:'2026-10-01'}).rows.length,0);
+assert.equal(reviewCSV(unknownSubmitted).stats.unparsedSubmittedDates,1);
+assert.throws(()=>reviewCSV('recordno,description,filed_date\nTEST,restaurant,2026-10-23'),/submitted_date/);
+assert.throws(()=>reviewCSV('recordno,permit_number,description,submitted_date\nTEST,123,restaurant,2026-10-23'),/one source export/);
+assert.equal(isoDay('2026/10/23 12:01:00 PM'),'2026-10-23');
+assert.equal(isoDay('2026/02/30 12:01:00 PM'),'');
+assert.equal(review.rows[0].date_basis,'filed_date');
+assert.equal(review.rows[0].source_format,'building');
+console.log('PASS: PermitSF field mapping, separate submission/issuance/source dates, raw status, safe source links, cutoff/trade filtering and legacy behavior.');
 console.log('PASS: original four-row behavior and CSV safety preserved; three trade subsets, dated evidence, selected-mode export and unrelated/cabinet exclusions verified.');

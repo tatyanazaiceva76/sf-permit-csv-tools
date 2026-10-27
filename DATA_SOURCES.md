@@ -40,3 +40,9 @@ Official links may show a newer state than these fixtures. Compare the displayed
 The dataset metadata saved with the original source records lists license ID `PDDL`, the Open Data Commons Public Domain Dedication and License, and links to [PDDL 1.0](https://opendatacommons.org/licenses/pddl/1-0/). That attribution describes the captured source metadata; it is not a new license lookup for today's dataset.
 
 The software license in this repository applies to the original code and documentation. It does not replace the source data's PDDL dedication, create ownership of government records, or grant rights to third-party materials merely linked from a source record. No City endorsement is implied.
+
+## PermitSF format and coverage (checked October 27, 2026 UTC)
+
+The official [legacy electrical dataset](https://data.sf.gov/Housing-and-Buildings/Electrical-Permits-legacy-system-/ftty-kx6y) and [legacy plumbing/mechanical dataset](https://data.sf.gov/Housing-and-Buildings/Plumbing-Permits-legacy-system-/a6aw-rudh) direct readers to [PermitSF Permitting Data, tyz3-vt28](https://data.sf.gov/Housing-and-Buildings/PermitSF-Permitting-Data/tyz3-vt28/about_data) for permits submitted through PermitSF from September 14, 2026 onward. Legacy exceptions remain. The PermitSF catalog includes electrical and plumbing/mechanical permits without plans and other specified types; it does not replace all Building Permits categories.
+
+The live catalog confirmed the field names used by the filter, including `recordno`, `submitted_date`, `status_detail`, `permit_issued_date`, `streetno`, `streetname`, `unit` and `data_as_of`. This is a format/coverage check, not a newly downloaded set of project rows or evidence of procurement. The source metadata lists PDDL. Existing CSV example files and their source dates are unchanged. New unit-test rows containing `TEST` are original synthetic fixtures, not government records.
