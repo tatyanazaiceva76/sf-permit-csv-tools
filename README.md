@@ -2,6 +2,8 @@
 
 Two small browser tools for reviewing San Francisco Building Permits CSV exports: a restaurant scope filter and a comparison of two saved exports. They help researchers inspect permit wording, source dates and changed fields. A permit record does not establish an equipment purchase or a verified buyer.
 
+Start with the [free tools and worked guides](https://sfkitchenfieldnotes.blogspot.com/p/start-here-free-sf-restaurant-permit.html). Choose a tool by task, read the six free permit examples, or follow the official-record and business-source checks. No account or purchase is needed.
+
 Download the repository and open `filter.html` or `compare.html` in a browser with JavaScript enabled. Each file includes its code and examples; no installation, API key or account is needed. CSV processing runs in the page without uploading or storing your pasted input. Official record links and project links open external websites when followed.
 
 | Tool | Local file | Hosted version |
